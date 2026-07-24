@@ -1,0 +1,41 @@
+{
+  "name": "horace",
+  "version": "0.1.0",
+  "description": "Personal lesson planning and tracking application",
+  "scripts": {
+    "dev": "npm run dev --workspace @horace/api",
+    "build": "npm run build --workspace @horace/api",
+    "start": "npm run start --workspace @horace/api",
+    "lint": "eslint apps/api/src apps/api/prisma/seed.ts",
+    "lint:fix": "npm run lint -- --fix",
+    "typecheck": "npm run typecheck --workspace @horace/api",
+    "prisma:generate": "npm run --workspace @horace/api prisma:generate",
+    "prisma:migrate": "npm run --workspace @horace/api prisma:migrate --",
+    "prisma:migrate:deploy": "npm run --workspace @horace/api prisma:migrate:deploy",
+    "prisma:seed": "npm run --workspace @horace/api prisma:seed",
+    "prisma:studio": "npm run --workspace @horace/api prisma:studio"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/louis-stintzy/horace.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/louis-stintzy/horace/issues"
+  },
+  "homepage": "https://github.com/louis-stintzy/horace#readme",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "typescript-eslint": "^8.65.0"
+  }
+}

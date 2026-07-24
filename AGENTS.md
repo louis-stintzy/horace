@@ -21,7 +21,16 @@
   être filtrée par propriétaire.
 - Vérifier dans les services que l'utilisateur, l'agence, l'élève, le
   représentant et le cours ont le même propriétaire.
-- L'agence et le tarif d'un cours sont des instantanés historiques.
+- `Lesson.agencyId` représente l'affectation historique du cours à une agence.
+  Une modification ultérieure de `Student.agencyId` ne modifie jamais les
+  anciens cours.
+- Une correction ou amélioration du nom d'une même agence reste volontairement
+  visible dans les anciens rapports.
+- Lorsqu'un changement d'agence représente une nouvelle identité métier, créer
+  une nouvelle agence et désactiver l'ancienne.
+- Les statistiques par agence utilisent toujours `Lesson.agencyId`, jamais
+  l'agence actuelle de l'élève.
+- Le tarif enregistré sur un cours est un instantané historique.
 - Une agence ou un élève possédant un historique est désactivé, pas supprimé.
 - Les dates sont stockées en UTC et interprétées dans le fuseau
   `Europe/Paris`.

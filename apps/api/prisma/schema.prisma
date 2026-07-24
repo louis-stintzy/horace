@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LessonStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  displayName String
+  timeZone    String   @default("Europe/Paris")
+  currency    String   @default("EUR")
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  agencies               Agency[]
+  students               Student[]
+  representatives        Representative[]
+  studentRepresentatives StudentRepresentative[]
+  lessons                Lesson[]
+}
+
+model Agency {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @db.Uuid
+  name      String
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  students Student[]
+  lessons  Lesson[]
+
+  @@unique([ownerId, name])
+  @@unique([id, ownerId])
+  @@index([ownerId, isActive])
+}
+
+model Student {
+  id                     String   @id @default(uuid()) @db.Uuid
+  ownerId                String   @db.Uuid
+  agencyId               String   @db.Uuid
+  firstName              String
+  lastName               String
+  email                  String?
+  phone                  String?
+  notes                  String?
+  defaultHourlyRateCents Int?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime @updatedAt @db.Timestamptz(3)
+
+  owner           User                    @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  agency          Agency                  @relation(fields: [agencyId, ownerId], references: [id, ownerId], onDelete: Restrict)
+  representatives StudentRepresentative[]
+  lessons         Lesson[]
+
+  @@unique([id, ownerId])
+  @@index([ownerId, agencyId])
+  @@index([ownerId, isActive])
+  @@index([ownerId, lastName, firstName])
+}
+
+model Representative {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @db.Uuid
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  owner    User                    @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  students StudentRepresentative[]
+
+  @@unique([id, ownerId])
+  @@index([ownerId, lastName, firstName])
+}
+
+model StudentRepresentative {
+  ownerId          String   @db.Uuid
+  studentId        String   @db.Uuid
+  representativeId String   @db.Uuid
+  relationship     String?
+  isPrimary        Boolean  @default(false)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  owner          User           @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  student        Student        @relation(fields: [studentId, ownerId], references: [id, ownerId], onDelete: Restrict)
+  representative Representative @relation(fields: [representativeId, ownerId], references: [id, ownerId], onDelete: Restrict)
+
+  @@id([studentId, representativeId])
+  @@index([ownerId])
+  @@index([representativeId])
+}
+
+model Lesson {
+  id              String       @id @default(uuid()) @db.Uuid
+  ownerId         String       @db.Uuid
+  studentId       String       @db.Uuid
+  agencyId        String       @db.Uuid
+  startsAt        DateTime     @db.Timestamptz(3)
+  endsAt          DateTime     @db.Timestamptz(3)
+  status          LessonStatus @default(PLANNED)
+  hourlyRateCents Int
+  amountCents     Int
+  notes           String?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  owner   User    @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [studentId, ownerId], references: [id, ownerId], onDelete: Restrict)
+  agency  Agency  @relation(fields: [agencyId, ownerId], references: [id, ownerId], onDelete: Restrict)
+
+  @@index([ownerId, startsAt])
+  @@index([ownerId, studentId, startsAt])
+  @@index([ownerId, agencyId, startsAt])
+  @@index([ownerId, status, startsAt])
+}

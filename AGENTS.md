@@ -47,7 +47,8 @@
 
 - Préférer la plateforme Node.js et des dépendances déjà installées.
 - Toute nouvelle dépendance doit répondre à un besoin concret.
-- Après un changement, exécuter au minimum `npm run typecheck`.
+- Après une modification de code, exécuter au minimum `npm run lint` et
+  `npm run typecheck`.
 - Lors d'un changement Prisma, générer le client et créer ou appliquer la
   migration appropriée.
 - Ne pas implémenter de CRUD hors de l'étape explicitement demandée.

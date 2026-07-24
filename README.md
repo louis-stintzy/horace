@@ -33,6 +33,8 @@ GET /api/v1/health
 
 ```bash
 npm run dev
+npm run lint
+npm run lint:fix
 npm run build
 npm run start
 npm run typecheck

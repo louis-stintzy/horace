@@ -6,6 +6,8 @@
     "dev": "npm run dev --workspace @horace/api",
     "build": "npm run build --workspace @horace/api",
     "start": "npm run start --workspace @horace/api",
+    "lint": "eslint apps/api/src apps/api/prisma/seed.ts",
+    "lint:fix": "npm run lint -- --fix",
     "typecheck": "npm run typecheck --workspace @horace/api",
     "prisma:generate": "npm run --workspace @horace/api prisma:generate",
     "prisma:migrate": "npm run --workspace @horace/api prisma:migrate --",
@@ -29,5 +31,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "typescript-eslint": "^8.65.0"
+  }
 }

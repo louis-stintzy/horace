@@ -67,11 +67,10 @@ Le seed crée uniquement :
 
 Le seed est idempotent et ne crée aucun élève ni représentant fictif.
 
-`DEV_USER_ID` identifie provisoirement cet utilisateur dans chaque requête sur
-les agences. Un middleware de développement place cet identifiant dans le
-contexte de requête. Les controllers et services ne connaissent pas sa valeur ;
-le futur middleware d'authentification pourra remplacer ce fournisseur de
-contexte.
+`DEV_USER_ID` identifie provisoirement cet utilisateur dans les requêtes métier.
+Un middleware de développement place cet identifiant dans le contexte de
+requête. Les controllers et services ne connaissent pas sa valeur ; le futur
+middleware d'authentification pourra remplacer ce fournisseur de contexte.
 
 La configuration refuse explicitement `NODE_ENV=production` tant que ce
 mécanisme provisoire est actif.
@@ -117,6 +116,44 @@ Codes HTTP principaux :
 - `400` : données invalides ;
 - `404` : agence absente pour l'utilisateur courant ;
 - `409` : nom déjà utilisé par cet utilisateur.
+
+## API des représentants
+
+```text
+POST   /api/v1/representatives
+GET    /api/v1/representatives
+GET    /api/v1/representatives/:id
+PATCH  /api/v1/representatives/:id
+```
+
+Création :
+
+```json
+{
+  "firstName": "Camille",
+  "lastName": "Martin",
+  "email": "camille@example.com",
+  "phone": "06 12 34 56 78",
+  "notes": "Responsable légal"
+}
+```
+
+`email`, `phone` et `notes` sont facultatifs et peuvent être remis à `null`
+avec `PATCH`. Au moins un champ doit être fourni lors d'une modification.
+
+La liste retourne tous les représentants de l'utilisateur, triés par nom,
+prénom puis identifiant. Elle ne possède pas encore de pagination ou de
+recherche.
+
+Codes HTTP principaux :
+
+- `201` : représentant créé ;
+- `200` : liste, consultation ou modification réussie ;
+- `400` : données invalides ;
+- `404` : représentant absent pour l'utilisateur courant.
+
+Les associations entre représentants et élèves via `StudentRepresentative`
+seront ajoutées dans le futur module `students`.
 
 ## Avertissement de sécurité
 

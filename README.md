@@ -229,6 +229,56 @@ Codes HTTP principaux :
 Changer `Student.agencyId` ne modifie jamais les cours existants : chaque cours
 conserve sa propre affectation historique dans `Lesson.agencyId`.
 
+## API des cours
+
+```text
+POST   /api/v1/lessons
+GET    /api/v1/lessons
+GET    /api/v1/lessons/:id
+PATCH  /api/v1/lessons/:id
+```
+
+Création :
+
+```json
+{
+  "studentId": "00000000-0000-4000-8000-000000000030",
+  "startsAt": "2026-08-03T14:00:00+02:00",
+  "endsAt": "2026-08-03T15:30:00+02:00",
+  "status": "PLANNED",
+  "hourlyRateCents": 3000,
+  "notes": null
+}
+```
+
+Les dates doivent être ISO 8601 et inclure `Z` ou un décalage UTC explicite.
+`endsAt` doit être strictement postérieur à `startsAt`. Les dates retournées
+sont sérialisées en UTC.
+
+`agencyId` et `hourlyRateCents` sont facultatifs à la création. À défaut, l'API
+copie l'agence courante et le tarif par défaut de l'élève. Ces valeurs restent
+des instantanés historiques du cours. Lors d'un changement d'élève par `PATCH`,
+les valeurs du nouvel élève sont reprises sauf si une nouvelle agence ou un
+nouveau tarif sont explicitement fournis.
+
+Le montant est calculé en centimes à partir de la durée et du tarif horaire. Un
+cours annulé (`CANCELLED`) a toujours un montant nul. Un cours planifié exige
+un élève et une agence actifs ; les cours terminés ou annulés peuvent conserver
+et utiliser des ressources désormais inactives.
+
+La liste accepte `from` (inclus), `to` (exclus), `studentId`, `agencyId` et
+`status`. Elle est triée par date de début puis identifiant. Aucun contrôle de
+chevauchement n'est appliqué à ce stade : plusieurs cours simultanés sont
+volontairement autorisés.
+
+Codes HTTP principaux :
+
+- `201` : cours créé ;
+- `200` : liste, consultation ou modification réussie ;
+- `400` : données ou période invalides ;
+- `404` : cours, élève ou agence absent pour l'utilisateur courant ;
+- `409` : ressource inactive, tarif requis ou montant hors plage.
+
 ## Avertissement de sécurité
 
 L'API ne possède encore aucune authentification. Le modèle est multi-utilisateur,

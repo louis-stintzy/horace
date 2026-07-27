@@ -96,6 +96,13 @@ export class StudentRepresentativeNotFoundRepositoryError extends Error {
   }
 }
 
+export class StudentHasPlannedLessonsRepositoryError extends Error {
+  constructor() {
+    super("Student has planned lessons");
+    this.name = "StudentHasPlannedLessonsRepositoryError";
+  }
+}
+
 const agencySummarySelect = {
   id: true,
   name: true,
@@ -343,6 +350,7 @@ export class StudentRepository {
         },
         select: {
           id: true,
+          isActive: true,
         },
       });
 
@@ -352,6 +360,23 @@ export class StudentRepository {
 
       if (data.agencyId !== undefined) {
         await assertAgencyIsActive(transaction, ownerId, data.agencyId);
+      }
+
+      if (student.isActive && data.isActive === false) {
+        const plannedLesson = await transaction.lesson.findFirst({
+          where: {
+            ownerId,
+            studentId: id,
+            status: "PLANNED",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (plannedLesson) {
+          throw new StudentHasPlannedLessonsRepositoryError();
+        }
       }
 
       await transaction.student.update({

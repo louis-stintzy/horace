@@ -8,8 +8,16 @@
 - L'API est préfixée par `/api/v1`.
 - Le code métier est organisé par domaine.
 - Chaque domaine sépare controller, service et repository.
-- Les controllers gèrent HTTP, les services portent les règles métier et les
-  repositories isolent Prisma.
+- Les controllers gèrent HTTP.
+- Les services portent les règles métier et traduisent les erreurs typées des
+  repositories en erreurs applicatives.
+- Toutes les requêtes repository sont filtrées par propriétaire.
+- Lorsqu'une règle de cohérence entre plusieurs ressources doit être garantie
+  dans la même transaction que l'écriture, le service peut déléguer au
+  repository une opération transactionnelle explicite.
+- Les repositories isolent Prisma, utilisent `ownerId`, retournent des
+  résultats ou erreurs typés et n'exposent jamais directement une erreur
+  Prisma.
 - Ne pas ajouter de bibliothèque d'injection de dépendances. Utiliser des
   constructeurs ou fonctions explicites.
 - Ne pas créer d'abstraction générique de repository sans besoin concret.
@@ -19,8 +27,9 @@
 - Le modèle est multi-utilisateur dès le premier schéma.
 - Toute donnée métier appartient à un utilisateur et toute requête future doit
   être filtrée par propriétaire.
-- Vérifier dans les services que l'utilisateur, l'agence, l'élève, le
-  représentant et le cours ont le même propriétaire.
+- Vérifier que l'utilisateur, l'agence, l'élève, le représentant et le cours
+  ont le même propriétaire, dans le service ou dans l'opération
+  transactionnelle explicite du repository selon la cohérence à garantir.
 - `Lesson.agencyId` représente l'affectation historique du cours à une agence.
   Une modification ultérieure de `Student.agencyId` ne modifie jamais les
   anciens cours.

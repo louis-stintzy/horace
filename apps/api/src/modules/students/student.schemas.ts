@@ -1,11 +1,18 @@
 import { z } from "zod";
 
+const POSTGRESQL_SIGNED_INTEGER_MAX = 2_147_483_647;
+
 const firstNameSchema = z.string().trim().min(1).max(100);
 const lastNameSchema = z.string().trim().min(1).max(100);
 const emailSchema = z.string().trim().email().max(254).nullable();
 const phoneSchema = z.string().trim().min(1).max(50).nullable();
 const notesSchema = z.string().trim().max(2_000).nullable();
-const hourlyRateSchema = z.number().int().positive().nullable();
+const hourlyRateSchema = z
+  .number()
+  .int()
+  .positive()
+  .max(POSTGRESQL_SIGNED_INTEGER_MAX)
+  .nullable();
 const relationshipSchema = z.string().trim().min(1).max(100).nullable();
 
 const representativeAssociationSchema = z

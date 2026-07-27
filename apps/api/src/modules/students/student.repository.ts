@@ -142,6 +142,7 @@ const studentDetailSelect = {
 
 type TransactionClient = Prisma.TransactionClient;
 
+// Keep ownership and coherence checks in the same transaction as their writes.
 const assertAgencyIsActive = async (
   transaction: TransactionClient,
   ownerId: string,

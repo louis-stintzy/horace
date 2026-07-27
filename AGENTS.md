@@ -41,6 +41,11 @@
   l'agence actuelle de l'élève.
 - Le tarif enregistré sur un cours est un instantané historique.
 - Une agence ou un élève possédant un historique est désactivé, pas supprimé.
+- Tout cours dont l'état final est `PLANNED` référence un élève actif et une
+  agence active.
+- Un élève ou une agence référencé par un cours `PLANNED` ne peut pas être
+  désactivé. Terminer ou annuler d'abord les cours concernés, sans les modifier
+  ou les supprimer automatiquement lors de la désactivation.
 - Les dates sont stockées en UTC et interprétées dans le fuseau
   `Europe/Paris`.
 - Les semaines métier suivent ISO 8601, du lundi au dimanche.

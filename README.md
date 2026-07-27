@@ -262,9 +262,15 @@ les valeurs du nouvel élève sont reprises sauf si une nouvelle agence ou un
 nouveau tarif sont explicitement fournis.
 
 Le montant est calculé en centimes à partir de la durée et du tarif horaire. Un
-cours annulé (`CANCELLED`) a toujours un montant nul. Un cours planifié exige
-un élève et une agence actifs ; les cours terminés ou annulés peuvent conserver
-et utiliser des ressources désormais inactives.
+cours annulé (`CANCELLED`) a toujours un montant nul. L'état final d'un cours
+planifié exige toujours un élève et une agence actifs, y compris lors d'une
+modification partielle. Les cours terminés ou annulés peuvent conserver et
+utiliser des ressources désormais inactives.
+
+Un élève ou une agence référencé par au moins un cours planifié ne peut pas être
+désactivé. Les cours concernés doivent d'abord être passés à `COMPLETED` ou
+`CANCELLED`. Les cours historiques ne sont ni supprimés ni modifiés
+automatiquement.
 
 La liste accepte `from` (inclus), `to` (exclus), `studentId`, `agencyId` et
 `status`. Elle est triée par date de début puis identifiant. Aucun contrôle de

@@ -298,13 +298,8 @@ export class LessonRepository {
       }
 
       const status = data.status ?? lesson.status;
-      const isNewPlannedAssignment =
-        status === "PLANNED" &&
-        (lesson.status !== "PLANNED" ||
-          studentId !== lesson.studentId ||
-          agencyId !== lesson.agencyId);
 
-      if (isNewPlannedAssignment) {
+      if (status === "PLANNED") {
         assertResourcesAreActive(student, agency);
       }
 

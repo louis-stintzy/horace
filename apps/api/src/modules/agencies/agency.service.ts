@@ -1,6 +1,7 @@
 import { AppError } from "../../shared/errors/app-error.js";
 import type { CreateAgencyInput, UpdateAgencyInput } from "./agency.schemas.js";
 import {
+  AgencyHasPlannedLessonsRepositoryError,
   AgencyNameConflictRepositoryError,
   type AgencyRecord,
   AgencyRepository,
@@ -51,6 +52,14 @@ export class AgencyService {
         "An agency with this name already exists.",
         409,
         "AGENCY_NAME_CONFLICT",
+      );
+    }
+
+    if (error instanceof AgencyHasPlannedLessonsRepositoryError) {
+      throw new AppError(
+        "Complete or cancel the agency's planned lessons before deactivating it.",
+        409,
+        "AGENCY_HAS_PLANNED_LESSONS",
       );
     }
 

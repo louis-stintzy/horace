@@ -3,6 +3,7 @@ import {
   StudentAgencyInactiveRepositoryError,
   StudentAgencyNotFoundRepositoryError,
   type StudentDetailRecord,
+  StudentHasPlannedLessonsRepositoryError,
   StudentNotFoundRepositoryError,
   type StudentRecord,
   StudentRepresentativeNotFoundRepositoryError,
@@ -94,6 +95,14 @@ export class StudentService {
         "At least one representative was not found.",
         404,
         "REPRESENTATIVE_NOT_FOUND",
+      );
+    }
+
+    if (error instanceof StudentHasPlannedLessonsRepositoryError) {
+      throw new AppError(
+        "Complete or cancel the student's planned lessons before deactivating them.",
+        409,
+        "STUDENT_HAS_PLANNED_LESSONS",
       );
     }
 

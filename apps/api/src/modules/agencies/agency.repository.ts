@@ -28,6 +28,13 @@ export class AgencyNameConflictRepositoryError extends Error {
   }
 }
 
+export class AgencyHasPlannedLessonsRepositoryError extends Error {
+  constructor() {
+    super("Agency has planned lessons");
+    this.name = "AgencyHasPlannedLessonsRepositoryError";
+  }
+}
+
 const agencySelect = {
   id: true,
   name: true,
@@ -87,25 +94,56 @@ export class AgencyRepository {
     data: UpdateAgencyData,
   ): Promise<AgencyRecord | null> {
     try {
-      return await prisma.agency.update({
-        where: {
-          id_ownerId: {
-            id,
-            ownerId,
+      return await prisma.$transaction(async (transaction) => {
+        const agency = await transaction.agency.findUnique({
+          where: {
+            id_ownerId: {
+              id,
+              ownerId,
+            },
           },
-        },
-        data: {
-          ...(data.name !== undefined ? { name: data.name } : {}),
-          ...(data.notes !== undefined ? { notes: data.notes } : {}),
-          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-        },
-        select: agencySelect,
+          select: {
+            isActive: true,
+          },
+        });
+
+        if (!agency) {
+          return null;
+        }
+
+        if (agency.isActive && data.isActive === false) {
+          const plannedLesson = await transaction.lesson.findFirst({
+            where: {
+              ownerId,
+              agencyId: id,
+              status: "PLANNED",
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          if (plannedLesson) {
+            throw new AgencyHasPlannedLessonsRepositoryError();
+          }
+        }
+
+        return transaction.agency.update({
+          where: {
+            id_ownerId: {
+              id,
+              ownerId,
+            },
+          },
+          data: {
+            ...(data.name !== undefined ? { name: data.name } : {}),
+            ...(data.notes !== undefined ? { notes: data.notes } : {}),
+            ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+          },
+          select: agencySelect,
+        });
       });
     } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-        return null;
-      }
-
       return translateWriteError(error);
     }
   }

@@ -153,7 +153,81 @@ Codes HTTP principaux :
 - `404` : représentant absent pour l'utilisateur courant.
 
 Les associations entre représentants et élèves via `StudentRepresentative`
-seront ajoutées dans le futur module `students`.
+sont gérées par le module `students`.
+
+## API des élèves
+
+```text
+POST   /api/v1/students
+GET    /api/v1/students
+GET    /api/v1/students/:id
+PATCH  /api/v1/students/:id
+PUT    /api/v1/students/:id/representatives
+```
+
+Création avec représentants facultatifs :
+
+```json
+{
+  "agencyId": "00000000-0000-4000-8000-000000000010",
+  "firstName": "Alice",
+  "lastName": "Martin",
+  "email": null,
+  "phone": null,
+  "notes": null,
+  "defaultHourlyRateCents": 2700,
+  "representatives": [
+    {
+      "representativeId": "00000000-0000-4000-8000-000000000020",
+      "relationship": "Mère",
+      "isPrimary": true
+    }
+  ]
+}
+```
+
+`representatives` est facultatif et peut être vide. Les identifiants doivent
+être uniques et un seul représentant au maximum peut être principal. Les
+ressources référencées doivent appartenir au même utilisateur.
+
+Le tarif par défaut est facultatif, nullable et exprimé en centimes entiers
+strictement positifs.
+
+La liste accepte les filtres facultatifs `isActive=true|false` et
+`agencyId=<uuid>`. Sans filtre, elle retourne tous les élèves de l'utilisateur,
+triés par nom, prénom puis identifiant.
+
+`PATCH /api/v1/students/:id` modifie uniquement les informations générales,
+l'agence courante et l'état actif. Il ne modifie jamais les représentants.
+
+Le remplacement complet des associations utilise :
+
+```json
+{
+  "representatives": [
+    {
+      "representativeId": "00000000-0000-4000-8000-000000000020",
+      "relationship": "Père",
+      "isPrimary": true
+    }
+  ]
+}
+```
+
+`PUT /api/v1/students/:id/representatives` est atomique. Un tableau vide retire
+toutes les associations. Une erreur de validation ou une ressource inexistante
+laisse les anciennes associations intactes.
+
+Codes HTTP principaux :
+
+- `201` : élève créé ;
+- `200` : liste, consultation ou modification réussie ;
+- `400` : données ou associations invalides ;
+- `404` : élève, agence ou représentant absent pour l'utilisateur courant ;
+- `409` : agence inactive.
+
+Changer `Student.agencyId` ne modifie jamais les cours existants : chaque cours
+conserve sa propre affectation historique dans `Lesson.agencyId`.
 
 ## Avertissement de sécurité
 

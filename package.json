@@ -6,9 +6,17 @@
     "dev": "npm run dev --workspace @horace/api",
     "build": "npm run build --workspace @horace/api",
     "start": "npm run start --workspace @horace/api",
-    "lint": "eslint apps/api/src apps/api/prisma/seed.ts",
+    "lint": "eslint apps/api/src apps/api/prisma/seed.ts apps/api/tests apps/api/vitest.config.ts",
     "lint:fix": "npm run lint -- --fix",
     "typecheck": "npm run typecheck --workspace @horace/api",
+    "test": "npm run test:integration",
+    "test:run": "npm run test:integration",
+    "test:watch": "NODE_ENV=test DATABASE_URL=${DATABASE_URL:-postgresql://horace_test:horace_test@localhost:5439/horace_test?schema=public} APP_TIME_ZONE=Europe/Paris APP_CURRENCY=EUR DEV_USER_ID=00000000-0000-4000-8000-000000000101 vitest --config apps/api/vitest.config.ts",
+    "test:integration": "NODE_ENV=test DATABASE_URL=${DATABASE_URL:-postgresql://horace_test:horace_test@localhost:5439/horace_test?schema=public} APP_TIME_ZONE=Europe/Paris APP_CURRENCY=EUR DEV_USER_ID=00000000-0000-4000-8000-000000000101 vitest run --config apps/api/vitest.config.ts",
+    "test:db:up": "docker compose -f compose.test.yaml up -d --wait",
+    "test:db:down": "docker compose -f compose.test.yaml down --volumes",
+    "test:db:migrate": "NODE_ENV=test DATABASE_URL=${DATABASE_URL:-postgresql://horace_test:horace_test@localhost:5439/horace_test?schema=public} APP_TIME_ZONE=Europe/Paris APP_CURRENCY=EUR DEV_USER_ID=00000000-0000-4000-8000-000000000101 node --import tsx apps/api/tests/integration/test-environment.ts && DATABASE_URL=${DATABASE_URL:-postgresql://horace_test:horace_test@localhost:5439/horace_test?schema=public} npm run prisma:migrate:deploy",
+    "verify": "npm run lint && npm run typecheck && npm run build && npm run test:integration",
     "prisma:generate": "npm run --workspace @horace/api prisma:generate",
     "prisma:migrate": "npm run --workspace @horace/api prisma:migrate --",
     "prisma:migrate:deploy": "npm run --workspace @horace/api prisma:migrate:deploy",
@@ -34,8 +42,11 @@
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/supertest": "^7.2.1",
     "eslint": "^10.7.0",
     "globals": "^17.7.0",
-    "typescript-eslint": "^8.65.0"
+    "supertest": "^7.2.2",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
   }
 }

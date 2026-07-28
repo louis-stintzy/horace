@@ -14,13 +14,21 @@ export default defineConfig(
     ],
   },
   {
-    files: ["apps/api/src/**/*.ts", "apps/api/prisma/seed.ts"],
+    files: [
+      "apps/api/src/**/*.ts",
+      "apps/api/prisma/seed.ts",
+      "apps/api/tests/**/*.ts",
+      "apps/api/vitest.config.ts",
+    ],
     extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       globals: globals.node,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["apps/api/prisma/seed.ts"],
+          allowDefaultProject: [
+            "apps/api/prisma/seed.ts",
+            "apps/api/vitest.config.ts",
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },

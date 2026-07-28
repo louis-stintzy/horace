@@ -197,7 +197,7 @@ describe("lessons", () => {
       startsAt: new Date("2026-09-10T10:00:00Z"),
       endsAt: new Date("2026-09-10T11:00:00Z"),
     });
-    await createLessonFixture({
+    const completed = await createLessonFixture({
       studentId: student.id,
       agencyId: agency.id,
       status: "COMPLETED",
@@ -223,20 +223,28 @@ describe("lessons", () => {
       planned.id,
     ]);
 
-    for (const query of [
-      { studentId: student.id },
-      { agencyId: agency.id },
-      { status: "PLANNED" },
+    for (const { query, expectedIds } of [
+      {
+        query: { studentId: student.id },
+        expectedIds: [planned.id, completed.id],
+      },
+      {
+        query: { agencyId: agency.id },
+        expectedIds: [planned.id, completed.id],
+      },
+      {
+        query: { status: "PLANNED" },
+        expectedIds: [planned.id],
+      },
     ]) {
       const response = await request(app)
         .get("/api/v1/lessons")
         .query(query)
         .expect(200);
-      expect(
-        bodyAs<DataBody<LessonResource[]>>(response).data.some(
-          ({ id }) => id === otherLesson.id,
-        ),
-      ).toBe(false);
+      const lessonIds = bodyAs<DataBody<LessonResource[]>>(response).data.map(
+        ({ id }) => id,
+      );
+      expect(lessonIds).toEqual(expectedIds);
     }
   });
 });

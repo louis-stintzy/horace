@@ -38,6 +38,12 @@ npm run lint:fix
 npm run build
 npm run start
 npm run typecheck
+npm run test:integration
+npm run test:watch
+npm run test:db:up
+npm run test:db:migrate
+npm run test:db:down
+npm run verify
 npm run prisma:generate
 npm run prisma:migrate -- --name <migration>
 npm run prisma:migrate:deploy
@@ -306,3 +312,38 @@ apps/api/
 
 Les futurs domaines suivront une structure controller / service / repository.
 L'étape actuelle expose uniquement la route de santé.
+
+## Tests d'intégration
+
+La suite utilise Vitest et Supertest. Elle importe directement l'application
+Express depuis `app.ts` et ne démarre jamais `server.ts`. Les tests vivent dans
+`apps/api/tests/integration` et s'exécutent séquentiellement.
+
+PostgreSQL de test est défini dans `compose.test.yaml` :
+
+- base : `horace_test` ;
+- port local : `5439` ;
+- stockage temporaire sans réutilisation du volume de développement ;
+- identifiants locaux sans secret réel.
+
+Pour partir d'une base propre et exécuter la suite :
+
+```bash
+npm run test:db:up
+npm run test:db:migrate
+npm run test:integration
+npm run test:db:down
+```
+
+Le mode interactif utilise `npm run test:watch`. `npm run verify` enchaîne lint,
+typecheck, build et tests d'intégration.
+
+Les utilitaires refusent tout nettoyage si `NODE_ENV` n'est pas `test` ou si
+`DATABASE_URL` ne cible pas exactement une base nommée `horace_test`.
+`apps/api/.env.test.example` documente la configuration, mais les tests ne
+modifient ni ne chargent `apps/api/.env`.
+
+La GitHub Action `API CI` s'exécute sur les pull requests et les pushes vers
+`main`. Elle utilise Node.js 22.20.0 et un service PostgreSQL 17 dédié, génère
+Prisma, applique les migrations existantes, puis lance lint, typecheck, build
+et les tests d'intégration.

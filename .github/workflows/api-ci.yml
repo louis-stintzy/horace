@@ -1,0 +1,46 @@
+name: API CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: horace_test
+          POSTGRES_USER: horace_test
+          POSTGRES_PASSWORD: horace_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U horace_test -d horace_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://horace_test:horace_test@localhost:5432/horace_test?schema=public
+      APP_TIME_ZONE: Europe/Paris
+      APP_CURRENCY: EUR
+      DEV_USER_ID: 00000000-0000-4000-8000-000000000101
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: npm
+
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run prisma:migrate:deploy
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test:integration

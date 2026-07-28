@@ -72,6 +72,11 @@
 - Toute nouvelle dépendance doit répondre à un besoin concret.
 - Après une modification de code, exécuter au minimum `npm run lint` et
   `npm run typecheck`.
+- Ajouter ou adapter les tests d'intégration lors d'une modification de règle
+  métier et exécuter la suite pertinente avant la fin de la tâche.
+- Les tests automatisés utilisent exclusivement la base dédiée `horace_test`.
+  Ne jamais les exécuter ni nettoyer leurs données dans la base de
+  développement `horace`.
 - Lors d'un changement Prisma, générer le client et créer ou appliquer la
   migration appropriée.
 - Ne pas implémenter de CRUD hors de l'étape explicitement demandée.

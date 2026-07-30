@@ -307,6 +307,23 @@ fuseau explicite. `from` est inclusif et `to` exclusif. Les regroupements
 civils utilisent le fuseau de l'utilisateur ; les semaines commencent le
 lundi.
 
+Pour demander le mois civil de juillet 2026 dans `Europe/Paris`, les bornes
+logiques sont `from=2026-07-01T00:00:00+02:00` (minuit à Paris le 1er juillet)
+et `to=2026-08-01T00:00:00+02:00` (minuit à Paris le 1er août). Lorsqu'il
+apparaît directement dans une query string, le signe `+` doit être encodé en
+`%2B` :
+
+```text
+/api/v1/statistics/summary?from=2026-07-01T00:00:00%2B02:00&to=2026-08-01T00:00:00%2B02:00
+```
+
+La réponse normalise ces mêmes instants en UTC :
+
+```text
+from = 2026-06-30T22:00:00.000Z
+to   = 2026-07-31T22:00:00.000Z
+```
+
 La synthèse accepte aussi `studentId` et `agencyId` :
 
 ```json

@@ -229,6 +229,14 @@ describe("statistics", () => {
       startsAt: new Date("2026-07-31T22:30:00Z"),
       endsAt: new Date("2026-07-31T23:30:00Z"),
     });
+    await createLessonFixture({
+      studentId: student.id,
+      agencyId: agency.id,
+      status: "PLANNED",
+      startsAt: new Date("2026-08-01T00:30:00Z"),
+      endsAt: new Date("2026-08-01T02:30:00Z"),
+      hourlyRateCents: 5_000,
+    });
 
     for (const { groupBy, periodStart } of [
       { groupBy: "day", periodStart: "2026-08-01" },
@@ -356,7 +364,21 @@ describe("statistics", () => {
       },
     ]);
 
-    await request(app)
+    await createLessonFixture({
+      studentId: student.id,
+      agencyId: currentAgency.id,
+      status: "COMPLETED",
+      hourlyRateCents: 4_000,
+    });
+    const otherStudent = await createStudentFixture({ agencyId: currentAgency.id });
+    await createLessonFixture({
+      studentId: otherStudent.id,
+      agencyId: historicalAgency.id,
+      status: "COMPLETED",
+      hourlyRateCents: 5_000,
+    });
+
+    const summaryResponse = await request(app)
       .get("/api/v1/statistics/summary")
       .query({
         ...FULL_PERIOD,
@@ -364,5 +386,22 @@ describe("statistics", () => {
         agencyId: historicalAgency.id,
       })
       .expect(200);
+    expect(bodyAs<DataBody<StatisticsSummary>>(summaryResponse).data.byStatus).toEqual({
+      PLANNED: {
+        lessonCount: 0,
+        durationMinutes: 0,
+        amountCents: 0,
+      },
+      COMPLETED: {
+        lessonCount: 1,
+        durationMinutes: 60,
+        amountCents: 2_700,
+      },
+      CANCELLED: {
+        lessonCount: 0,
+        durationMinutes: 0,
+        amountCents: 0,
+      },
+    });
   });
 });

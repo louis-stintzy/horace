@@ -29,6 +29,10 @@ L'API écoute par défaut sur `http://localhost:3000`. Sa route de santé est :
 GET /api/v1/health
 ```
 
+Le contrat HTTP complet est disponible dans
+[`docs/api/openapi.yaml`](docs/api/openapi.yaml). Les règles de maintenance du
+contrat sont précisées dans [`docs/api/README.md`](docs/api/README.md).
+
 ## Commandes
 
 ```bash
@@ -415,8 +419,7 @@ apps/api/
     └── shared/
 ```
 
-Les futurs domaines suivront une structure controller / service / repository.
-L'étape actuelle expose uniquement la route de santé.
+Les domaines suivent une structure controller / service / repository.
 
 ## Tests d'intégration
 

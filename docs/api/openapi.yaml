@@ -898,6 +898,7 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -923,6 +924,7 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
           description: Valeur nettoyée des espaces en début et fin.
         notes:
           type: [string, "null"]
@@ -939,6 +941,7 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -972,10 +975,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         lastName:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         email:
           type: [string, "null"]
           format: email
@@ -984,6 +989,7 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 50
+          pattern: '\S'
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -1007,10 +1013,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         lastName:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         email:
           type: [string, "null"]
           format: email
@@ -1019,6 +1027,7 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 50
+          pattern: '\S'
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -1066,6 +1075,7 @@ components:
           $ref: "#/components/schemas/Uuid"
         name:
           type: string
+          pattern: '\S'
     StudentSummary:
       type: object
       required:
@@ -1088,13 +1098,16 @@ components:
           $ref: "#/components/schemas/Uuid"
         firstName:
           type: string
+          pattern: '\S'
         lastName:
           type: string
+          pattern: '\S'
         email:
           type: [string, "null"]
           format: email
         phone:
           type: [string, "null"]
+          pattern: '\S'
         notes:
           type: [string, "null"]
         defaultHourlyRateCents:
@@ -1125,15 +1138,19 @@ components:
           $ref: "#/components/schemas/Uuid"
         firstName:
           type: string
+          pattern: '\S'
         lastName:
           type: string
+          pattern: '\S'
         email:
           type: [string, "null"]
           format: email
         phone:
           type: [string, "null"]
+          pattern: '\S'
         relationship:
           type: [string, "null"]
+          pattern: '\S'
         isPrimary:
           type: boolean
     StudentDetail:
@@ -1158,6 +1175,7 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         isPrimary:
           type: boolean
           default: false
@@ -1177,10 +1195,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         lastName:
           type: string
           minLength: 1
           maxLength: 100
+          pattern: '\S'
         email:
           type: [string, "null"]
           format: email
@@ -1189,6 +1209,7 @@ components:
           type: [string, "null"]
           minLength: 1
           maxLength: 50
+          pattern: '\S'
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -1256,8 +1277,10 @@ components:
           $ref: "#/components/schemas/Uuid"
         firstName:
           type: string
+          pattern: '\S'
         lastName:
           type: string
+          pattern: '\S'
     Lesson:
       type: object
       additionalProperties: false

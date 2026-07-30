@@ -73,6 +73,11 @@
 - Ne pas déclarer de mécanisme de sécurité OpenAPI avant l'implémentation de
   l'authentification. `DEV_USER_ID` est un détail serveur provisoire, pas une
   donnée fournie par le client.
+- Le frontend appelle l'API avec des chemins relatifs sous `/api/v1`. Ne jamais
+  placer une URL absolue de l'API dans un composant.
+- Les types frontend générés depuis OpenAPI ne sont jamais modifiés
+  manuellement. Après une modification du contrat, les régénérer et vérifier
+  leur dérive dans la même tâche.
 
 ## Sécurité
 
@@ -96,6 +101,8 @@
 - Lors d'un changement Prisma, générer le client et créer ou appliquer la
   migration appropriée.
 - Ne pas implémenter de CRUD hors de l'étape explicitement demandée.
+- Conserver l'état serveur dans TanStack Query. Ne pas le recopier dans
+  Zustand, un contexte React ou un autre store client.
 
 ## Compte rendu de fin de tâche
 

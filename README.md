@@ -1,9 +1,8 @@
 # Horace
 
 Horace est une application de planification et de suivi des cours particuliers,
-des heures réalisées et des montants associés.
-
-Le dépôt est un monorepo npm. Seule l'API existe pour le moment.
+des heures réalisées et des montants associés. Le dépôt est un monorepo npm
+contenant l'API Express et le frontend React.
 
 ## Prérequis
 
@@ -23,7 +22,8 @@ npm run prisma:seed
 npm run dev
 ```
 
-L'API écoute par défaut sur `http://localhost:3000`. Sa route de santé est :
+L'API écoute par défaut sur `http://localhost:3000` et le frontend sur
+`http://localhost:5173`. Sa route de santé est :
 
 ```text
 GET /api/v1/health
@@ -37,12 +37,15 @@ contrat sont précisées dans [`docs/api/README.md`](docs/api/README.md).
 
 ```bash
 npm run dev
+npm run dev:api
+npm run dev:web
 npm run lint
 npm run lint:fix
 npm run build
 npm run start
 npm run typecheck
 npm run test:integration
+npm run test:web
 npm run test:watch
 npm run test:db:up
 npm run test:db:migrate
@@ -53,6 +56,40 @@ npm run prisma:migrate -- --name <migration>
 npm run prisma:migrate:deploy
 npm run prisma:seed
 npm run prisma:studio
+npm run types:generate:web
+npm run types:check:web
+```
+
+`npm run dev` lance l'API et le frontend ensemble. Les commandes `dev:api` et
+`dev:web` permettent de les lancer séparément.
+
+## Frontend
+
+Le frontend vit dans `apps/web` et utilise React, Vite, TypeScript, React Router
+et TanStack Query. En développement, il appelle des chemins relatifs sous
+`/api/v1`. Le proxy Vite transmet `/api` vers `http://localhost:3000`, sans
+configuration CORS. La cible peut être remplacée côté serveur Vite avec
+`VITE_API_PROXY_TARGET`.
+
+Ce proxy est uniquement un outil de développement. Un futur déploiement devra
+router `/api` vers Express sous la même origine ou configurer explicitement une
+origine d'API séparée.
+
+Les types HTTP sont générés depuis `docs/api/openapi.yaml` :
+
+```bash
+npm run types:generate:web
+npm run types:check:web
+```
+
+Le fichier `apps/web/src/shared/api/generated/schema.d.ts` est versionné et ne
+doit jamais être modifié manuellement.
+
+Les tests frontend utilisent Vitest, Testing Library et MSW. Ils simulent la
+frontière HTTP et n'appellent ni l'API ni PostgreSQL :
+
+```bash
+npm run test:web
 ```
 
 ## Configuration
@@ -87,7 +124,9 @@ mécanisme provisoire est actif.
 
 ## API des agences
 
-Toutes les réponses nominales enveloppent leur contenu dans `data`.
+Toutes les réponses métier nominales enveloppent leur contenu dans `data`.
+La route d'infrastructure `/health` est l'exception et renvoie directement
+`{"status":"ok"}`.
 
 ```text
 POST   /api/v1/agencies

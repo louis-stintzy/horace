@@ -1,0 +1,207 @@
+:root {
+  color: #20312a;
+  background: #f5f7f5;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --color-primary: #195c45;
+  --color-primary-dark: #104431;
+  --color-surface: #ffffff;
+  --color-border: #d7e0db;
+  --color-muted: #52665c;
+  --color-success: #167549;
+  --color-error: #a42b2b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 20rem;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+:focus-visible {
+  outline: 0.2rem solid #d18b17;
+  outline-offset: 0.2rem;
+}
+
+.app-header {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.app-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(68rem, calc(100% - 2rem));
+  min-height: 4.25rem;
+  margin: 0 auto;
+}
+
+.brand {
+  color: var(--color-primary-dark);
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.navigation {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navigation__link {
+  display: block;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 0.2rem solid transparent;
+  color: var(--color-muted);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.navigation__link:hover {
+  color: var(--color-primary-dark);
+}
+
+.navigation__link.is-active {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.page-container {
+  width: min(68rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.page-header p {
+  max-width: 42rem;
+  margin: 0.5rem 0 0;
+  color: var(--color-muted);
+}
+
+.health-card,
+.state-panel {
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.health-card > h2,
+.state-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.state-panel p {
+  margin: 0;
+}
+
+.state-panel--error {
+  border-color: #e8b9b9;
+}
+
+.state-panel--error h2 {
+  color: var(--color-error);
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.health-status__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  border: 0.15rem solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.state-panel[aria-live] {
+  display: flex;
+  align-items: center;
+}
+
+.button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.4rem;
+  color: #ffffff;
+  background: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-primary-dark);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 32rem) {
+  .app-header__inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0.75rem 0;
+  }
+}

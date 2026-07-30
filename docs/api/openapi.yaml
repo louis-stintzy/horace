@@ -1,0 +1,1556 @@
+openapi: 3.1.0
+info:
+  title: Horace API
+  version: 1.0.0
+  description: |
+    Contrat HTTP de l'API Horace.
+
+    L'API est actuellement réservée au développement local. L'identité du
+    propriétaire est injectée côté serveur à partir de `DEV_USER_ID` : ce
+    mécanisme provisoire n'est ni un paramètre client ni une authentification.
+    Les données sont néanmoins isolées par `ownerId`. Le futur mécanisme
+    d'authentification remplacera ce contexte sans changer les contrats métier
+    autant que possible.
+    L'API ne doit pas être exposée publiquement avant l'ajout de
+    l'authentification et de l'autorisation.
+
+    Toutes les dates persistées sont renvoyées en UTC. Les dates reçues pour
+    les cours et les statistiques doivent inclure `Z` ou un décalage UTC
+    explicite. Les montants et tarifs sont exprimés en centimes entiers d'euro.
+
+    Une route inexistante retourne une erreur `NOT_FOUND` avec le message
+    `Route not found.`.
+    Aucune URL de production n'est définie à ce stade.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Environnement local
+tags:
+  - name: Health
+  - name: Agencies
+  - name: Representatives
+  - name: Students
+  - name: Lessons
+  - name: Statistics
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Vérifier l'état de l'API et de PostgreSQL
+      operationId: getHealth
+      responses:
+        "200":
+          description: L'API et la base de données répondent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /agencies:
+    post:
+      tags: [Agencies]
+      summary: Créer une agence
+      operationId: createAgency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgencyInput"
+      responses:
+        "201":
+          description: Agence créée.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          description: "`AGENCY_NAME_CONFLICT` — ce nom existe déjà pour le propriétaire."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: AGENCY_NAME_CONFLICT
+                  message: An agency with this name already exists.
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Agencies]
+      summary: Lister les agences
+      description: Retourne les agences du propriétaire, triées par nom puis identifiant.
+      operationId: listAgencies
+      parameters:
+        - $ref: "#/components/parameters/IsActive"
+      responses:
+        "200":
+          description: Liste des agences.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /agencies/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Agencies]
+      summary: Consulter une agence
+      operationId: getAgency
+      responses:
+        "200":
+          description: Agence trouvée.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/AgencyNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Agencies]
+      summary: Modifier une agence
+      description: |
+        Modifie le nom, les notes ou l'état actif. Une agence ayant des cours
+        `PLANNED` ne peut pas être désactivée. Une agence désactivée reste
+        visible dans l'historique des cours et des statistiques.
+      operationId: updateAgency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgencyInput"
+      responses:
+        "200":
+          description: Agence modifiée.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/AgencyNotFound"
+        "409":
+          description: |
+            `AGENCY_NAME_CONFLICT` si le nom est déjà utilisé ou
+            `AGENCY_HAS_PLANNED_LESSONS` si la désactivation est interdite.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                nameConflict:
+                  value:
+                    error:
+                      code: AGENCY_NAME_CONFLICT
+                      message: An agency with this name already exists.
+                plannedLessons:
+                  value:
+                    error:
+                      code: AGENCY_HAS_PLANNED_LESSONS
+                      message: Complete or cancel the agency's planned lessons before deactivating it.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /representatives:
+    post:
+      tags: [Representatives]
+      summary: Créer un représentant
+      operationId: createRepresentative
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRepresentativeInput"
+      responses:
+        "201":
+          description: Représentant créé.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepresentativeResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Representatives]
+      summary: Lister les représentants
+      description: Retourne les représentants triés par nom, prénom puis identifiant.
+      operationId: listRepresentatives
+      responses:
+        "200":
+          description: Liste des représentants.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepresentativeListResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /representatives/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Representatives]
+      summary: Consulter un représentant
+      operationId: getRepresentative
+      responses:
+        "200":
+          description: Représentant trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepresentativeResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/RepresentativeNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Representatives]
+      summary: Modifier un représentant
+      operationId: updateRepresentative
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRepresentativeInput"
+      responses:
+        "200":
+          description: Représentant modifié.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepresentativeResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/RepresentativeNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /students:
+    post:
+      tags: [Students]
+      summary: Créer un élève
+      description: |
+        L'agence et les représentants doivent appartenir au propriétaire.
+        L'agence doit être active. Les associations sont créées atomiquement.
+      operationId: createStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentInput"
+      responses:
+        "201":
+          description: Élève créé.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetailResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: "`AGENCY_NOT_FOUND` ou `REPRESENTATIVE_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "`AGENCY_INACTIVE` — l'agence choisie est inactive."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Students]
+      summary: Lister les élèves
+      description: Retourne les élèves triés par nom, prénom puis identifiant.
+      operationId: listStudents
+      parameters:
+        - $ref: "#/components/parameters/IsActive"
+        - $ref: "#/components/parameters/AgencyId"
+      responses:
+        "200":
+          description: Liste des élèves, sans leurs représentants.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /students/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Students]
+      summary: Consulter un élève
+      operationId: getStudent
+      responses:
+        "200":
+          description: Élève et associations trouvés.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetailResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/StudentNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Students]
+      summary: Modifier un élève
+      description: |
+        Ne modifie pas les représentants. Un élève ayant des cours `PLANNED`
+        ne peut pas être désactivé. Changer l'agence courante ne modifie pas
+        l'affectation historique des anciens cours. Changer son tarif par
+        défaut ne modifie pas non plus le tarif enregistré sur les anciens
+        cours. Un élève désactivé reste visible dans l'historique.
+      operationId: updateStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentInput"
+      responses:
+        "200":
+          description: Élève modifié.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetailResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: "`STUDENT_NOT_FOUND` ou `AGENCY_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: |
+            `AGENCY_INACTIVE` ou `STUDENT_HAS_PLANNED_LESSONS`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /students/{id}/representatives:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    put:
+      tags: [Students]
+      summary: Remplacer les représentants d'un élève
+      description: |
+        Remplace atomiquement toutes les associations. Un tableau vide les
+        retire toutes. Les représentants sont retournés avec le principal en
+        premier, puis par identifiant.
+      operationId: replaceStudentRepresentatives
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceStudentRepresentativesInput"
+      responses:
+        "200":
+          description: Associations remplacées.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDetailResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: "`STUDENT_NOT_FOUND` ou `REPRESENTATIVE_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /lessons:
+    post:
+      tags: [Lessons]
+      summary: Créer un cours
+      description: |
+        `endsAt` doit être strictement postérieur à `startsAt`. L'agence
+        explicite ou, à défaut, l'agence courante de l'élève est copiée sur le
+        cours. Le tarif explicite ou, à défaut, le tarif de l'élève est copié
+        sur le cours. Le montant est calculé côté serveur et vaut zéro pour un
+        cours annulé. Un cours `PLANNED` exige un élève et une agence actifs.
+        `agencyId` et `hourlyRateCents` sont ensuite des instantanés historiques
+        utilisés par les statistiques. Aucun contrôle de chevauchement n'est
+        actuellement appliqué.
+      operationId: createLesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLessonInput"
+      responses:
+        "201":
+          description: Cours créé.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonResponse"
+        "400":
+          description: Validation invalide, notamment une plage temporelle invalide.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "404":
+          description: "`STUDENT_NOT_FOUND` ou `AGENCY_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: |
+            `STUDENT_INACTIVE`, `AGENCY_INACTIVE`, `HOURLY_RATE_REQUIRED` ou
+            `AMOUNT_OUT_OF_RANGE`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Lessons]
+      summary: Lister les cours
+      description: |
+        Retourne les cours triés par date de début puis identifiant. `from` est
+        inclusif et `to` exclusif ; les filtres portent sur les instantanés
+        historiques `studentId` et `agencyId` enregistrés sur le cours. Les
+        ressources aujourd'hui désactivées restent visibles.
+      operationId: listLessons
+      parameters:
+        - $ref: "#/components/parameters/FromOptional"
+        - $ref: "#/components/parameters/ToOptional"
+        - $ref: "#/components/parameters/StudentId"
+        - $ref: "#/components/parameters/AgencyId"
+        - $ref: "#/components/parameters/LessonStatusOptional"
+      responses:
+        "200":
+          description: Liste des cours.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /lessons/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Lessons]
+      summary: Consulter un cours
+      operationId: getLesson
+      responses:
+        "200":
+          description: Cours trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/LessonNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Lessons]
+      summary: Modifier un cours
+      description: |
+        Les règles de création sont réévaluées sur l'état final. Modifier
+        l'élève sans fournir d'agence reprend l'agence courante du nouvel élève.
+        Modifier l'élève sans fournir de tarif reprend son tarif par défaut.
+        Modifier l'agence seule ne modifie pas le tarif. Le montant est
+        recalculé côté serveur.
+      operationId: updateLesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLessonInput"
+      responses:
+        "200":
+          description: Cours modifié.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonResponse"
+        "400":
+          description: |
+            `VALIDATION_ERROR` ou `INVALID_LESSON_TIME_RANGE`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationErrorResponse"
+                  - $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "`LESSON_NOT_FOUND`, `STUDENT_NOT_FOUND` ou `AGENCY_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: |
+            `STUDENT_INACTIVE`, `AGENCY_INACTIVE`, `HOURLY_RATE_REQUIRED` ou
+            `AMOUNT_OUT_OF_RANGE`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /statistics/summary:
+    get:
+      tags: [Statistics]
+      summary: Résumer les cours par statut
+      description: |
+        Agrège les cours dont `startsAt` appartient à `[from, to[`. Les trois
+        statuts sont toujours présents, même sans cours. Les filtres utilisent
+        les identifiants historiques enregistrés sur les cours.
+      operationId: getStatisticsSummary
+      parameters:
+        - $ref: "#/components/parameters/FromRequired"
+        - $ref: "#/components/parameters/ToRequired"
+        - $ref: "#/components/parameters/StudentId"
+        - $ref: "#/components/parameters/AgencyId"
+      responses:
+        "200":
+          description: Synthèse par statut.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatisticsSummaryResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/StatisticsResourceNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /statistics/timeline:
+    get:
+      tags: [Statistics]
+      summary: Obtenir une série temporelle
+      description: |
+        Regroupe les cours par jour, semaine ISO ou mois dans le fuseau du
+        propriétaire. Les semaines commencent le lundi. Seules les périodes
+        non vides sont retournées, dans l'ordre chronologique.
+      operationId: getStatisticsTimeline
+      parameters:
+        - $ref: "#/components/parameters/FromRequired"
+        - $ref: "#/components/parameters/ToRequired"
+        - $ref: "#/components/parameters/GroupBy"
+        - $ref: "#/components/parameters/StatisticsStatus"
+        - $ref: "#/components/parameters/StudentId"
+        - $ref: "#/components/parameters/AgencyId"
+      responses:
+        "200":
+          description: Série temporelle.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatisticsTimelineResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/StatisticsResourceNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /statistics/by-student:
+    get:
+      tags: [Statistics]
+      summary: Agréger les cours par élève
+      description: |
+        Les résultats sont triés par montant puis durée décroissants, puis par
+        nom, prénom et identifiant. Les élèves historiques inactifs restent
+        inclus.
+      operationId: getStatisticsByStudent
+      parameters:
+        - $ref: "#/components/parameters/FromRequired"
+        - $ref: "#/components/parameters/ToRequired"
+        - $ref: "#/components/parameters/StatisticsStatus"
+        - $ref: "#/components/parameters/AgencyId"
+      responses:
+        "200":
+          description: Agrégats par élève.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatisticsByStudentResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: "`AGENCY_NOT_FOUND` ou `USER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /statistics/by-agency:
+    get:
+      tags: [Statistics]
+      summary: Agréger les cours par agence
+      description: |
+        Le regroupement utilise toujours `Lesson.agencyId`, jamais l'agence
+        actuelle de l'élève. Les résultats sont triés par montant puis durée
+        décroissants, puis par nom et identifiant d'agence.
+      operationId: getStatisticsByAgency
+      parameters:
+        - $ref: "#/components/parameters/FromRequired"
+        - $ref: "#/components/parameters/ToRequired"
+        - $ref: "#/components/parameters/StatisticsStatus"
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Agrégats par agence.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatisticsByAgencyResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: "`STUDENT_NOT_FOUND` ou `USER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      description: Identifiant UUID de la ressource.
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    IsActive:
+      name: isActive
+      in: query
+      required: false
+      description: Filtre exact sur l'état actif.
+      schema:
+        type: boolean
+    StudentId:
+      name: studentId
+      in: query
+      required: false
+      description: Identifiant de l'élève du propriétaire.
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    AgencyId:
+      name: agencyId
+      in: query
+      required: false
+      description: Identifiant de l'agence du propriétaire.
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    LessonStatusOptional:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/LessonStatus"
+    StatisticsStatus:
+      name: status
+      in: query
+      required: false
+      description: Statut agrégé. `COMPLETED` par défaut.
+      schema:
+        allOf:
+          - $ref: "#/components/schemas/LessonStatus"
+        default: COMPLETED
+    FromOptional:
+      name: from
+      in: query
+      required: false
+      description: Borne inclusive sur `startsAt`.
+      schema:
+        $ref: "#/components/schemas/ZonedDateTimeInput"
+    ToOptional:
+      name: to
+      in: query
+      required: false
+      description: Borne exclusive sur `startsAt`, strictement postérieure à `from`.
+      schema:
+        $ref: "#/components/schemas/ZonedDateTimeInput"
+    FromRequired:
+      name: from
+      in: query
+      required: true
+      description: Début inclusif de la période.
+      schema:
+        $ref: "#/components/schemas/ZonedDateTimeInput"
+      example: "2026-07-01T00:00:00+02:00"
+    ToRequired:
+      name: to
+      in: query
+      required: true
+      description: Fin exclusive de la période, strictement postérieure à `from`.
+      schema:
+        $ref: "#/components/schemas/ZonedDateTimeInput"
+      example: "2026-08-01T00:00:00+02:00"
+    GroupBy:
+      name: groupBy
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [day, week, month]
+
+  responses:
+    ValidationError:
+      description: Données invalides (`VALIDATION_ERROR`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+    InternalError:
+      description: Erreur interne inattendue.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: INTERNAL_SERVER_ERROR
+              message: An unexpected error occurred.
+    AgencyNotFound:
+      description: Agence absente pour le propriétaire (`AGENCY_NOT_FOUND`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RepresentativeNotFound:
+      description: Représentant absent pour le propriétaire (`REPRESENTATIVE_NOT_FOUND`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    StudentNotFound:
+      description: Élève absent pour le propriétaire (`STUDENT_NOT_FOUND`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    LessonNotFound:
+      description: Cours absent pour le propriétaire (`LESSON_NOT_FOUND`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    StatisticsResourceNotFound:
+      description: |
+        `STUDENT_NOT_FOUND`, `AGENCY_NOT_FOUND` ou `USER_NOT_FOUND`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    ZonedDateTimeInput:
+      type: string
+      format: date-time
+      pattern: "(Z|[+-][0-9]{2}:[0-9]{2})$"
+      description: |
+        Date ISO 8601 avec `Z` ou décalage UTC explicite. Dans une query
+        string, encoder le signe `+` sous la forme `%2B`.
+    UtcDateTime:
+      type: string
+      format: date-time
+      description: Date sérialisée en UTC.
+    NullableText:
+      type: [string, "null"]
+    LessonStatus:
+      type: string
+      enum: [PLANNED, COMPLETED, CANCELLED]
+    PositivePostgresInteger:
+      type: integer
+      minimum: 1
+      maximum: 2147483647
+      description: Entier positif compatible avec un `INTEGER` PostgreSQL signé.
+    AggregateInteger:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/Error"
+    ValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [path, message]
+      properties:
+        path:
+          type: string
+        message:
+          type: string
+    ValidationError:
+      type: object
+      additionalProperties: false
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          const: VALIDATION_ERROR
+        message:
+          type: string
+          const: Invalid request data.
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+    ValidationErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ValidationError"
+
+    Agency:
+      type: object
+      additionalProperties: false
+      required: [id, name, notes, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        isActive:
+          type: boolean
+        createdAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        updatedAt:
+          $ref: "#/components/schemas/UtcDateTime"
+      example:
+        id: 00000000-0000-4000-8000-000000000010
+        name: Acadomia Strasbourg
+        notes: null
+        isActive: true
+        createdAt: "2026-07-01T08:00:00.000Z"
+        updatedAt: "2026-07-01T08:00:00.000Z"
+    CreateAgencyInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+          description: Valeur nettoyée des espaces en début et fin.
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+      example:
+        name: Nouvelle agence
+        notes: Note facultative
+    UpdateAgencyInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        isActive:
+          type: boolean
+    AgencyResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Agency"
+    AgencyListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Agency"
+
+    Representative:
+      type: object
+      additionalProperties: false
+      required: [id, firstName, lastName, email, phone, notes, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        email:
+          type: [string, "null"]
+          format: email
+          maxLength: 254
+        phone:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        createdAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        updatedAt:
+          $ref: "#/components/schemas/UtcDateTime"
+      example:
+        id: 00000000-0000-4000-8000-000000000020
+        firstName: Camille
+        lastName: Martin
+        email: camille@example.com
+        phone: 06 12 34 56 78
+        notes: Responsable légal
+        createdAt: "2026-07-01T08:00:00.000Z"
+        updatedAt: "2026-07-01T08:00:00.000Z"
+    RepresentativeWritableFields:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        email:
+          type: [string, "null"]
+          format: email
+          maxLength: 254
+        phone:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+    CreateRepresentativeInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/RepresentativeWritableFields"
+        - type: object
+          required: [firstName, lastName]
+      example:
+        firstName: Camille
+        lastName: Martin
+        email: camille@example.com
+        phone: 06 12 34 56 78
+        notes: Responsable légal
+    UpdateRepresentativeInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/RepresentativeWritableFields"
+        - type: object
+          minProperties: 1
+    RepresentativeResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Representative"
+    RepresentativeListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Representative"
+
+    AgencySummary:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+          pattern: '\S'
+    StudentSummary:
+      type: object
+      required:
+        - id
+        - agencyId
+        - firstName
+        - lastName
+        - email
+        - phone
+        - notes
+        - defaultHourlyRateCents
+        - isActive
+        - createdAt
+        - updatedAt
+        - agency
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        agencyId:
+          $ref: "#/components/schemas/Uuid"
+        firstName:
+          type: string
+          pattern: '\S'
+        lastName:
+          type: string
+          pattern: '\S'
+        email:
+          type: [string, "null"]
+          format: email
+        phone:
+          type: [string, "null"]
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+        defaultHourlyRateCents:
+          oneOf:
+            - $ref: "#/components/schemas/PositivePostgresInteger"
+            - type: "null"
+        isActive:
+          type: boolean
+        createdAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        updatedAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        agency:
+          $ref: "#/components/schemas/AgencySummary"
+    StudentRepresentative:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - firstName
+        - lastName
+        - email
+        - phone
+        - relationship
+        - isPrimary
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        firstName:
+          type: string
+          pattern: '\S'
+        lastName:
+          type: string
+          pattern: '\S'
+        email:
+          type: [string, "null"]
+          format: email
+        phone:
+          type: [string, "null"]
+          pattern: '\S'
+        relationship:
+          type: [string, "null"]
+          pattern: '\S'
+        isPrimary:
+          type: boolean
+    StudentDetail:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/StudentSummary"
+        - type: object
+          required: [representatives]
+          properties:
+            representatives:
+              type: array
+              items:
+                $ref: "#/components/schemas/StudentRepresentative"
+    RepresentativeAssociationInput:
+      type: object
+      additionalProperties: false
+      required: [representativeId]
+      properties:
+        representativeId:
+          $ref: "#/components/schemas/Uuid"
+        relationship:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        isPrimary:
+          type: boolean
+          default: false
+    RepresentativeAssociationList:
+      type: array
+      description: |
+        Les `representativeId` doivent être uniques et un seul élément au
+        maximum peut avoir `isPrimary: true`.
+      items:
+        $ref: "#/components/schemas/RepresentativeAssociationInput"
+    StudentWritableFields:
+      type: object
+      properties:
+        agencyId:
+          $ref: "#/components/schemas/Uuid"
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '\S'
+        email:
+          type: [string, "null"]
+          format: email
+          maxLength: 254
+        phone:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+          pattern: '\S'
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        defaultHourlyRateCents:
+          oneOf:
+            - $ref: "#/components/schemas/PositivePostgresInteger"
+            - type: "null"
+    CreateStudentInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/StudentWritableFields"
+        - type: object
+          required: [agencyId, firstName, lastName]
+          properties:
+            representatives:
+              $ref: "#/components/schemas/RepresentativeAssociationList"
+      example:
+        agencyId: 00000000-0000-4000-8000-000000000010
+        firstName: Alice
+        lastName: Martin
+        defaultHourlyRateCents: 2700
+        representatives:
+          - representativeId: 00000000-0000-4000-8000-000000000020
+            relationship: Mère
+            isPrimary: true
+    UpdateStudentInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/StudentWritableFields"
+        - type: object
+          minProperties: 1
+          properties:
+            isActive:
+              type: boolean
+    ReplaceStudentRepresentativesInput:
+      type: object
+      additionalProperties: false
+      required: [representatives]
+      properties:
+        representatives:
+          $ref: "#/components/schemas/RepresentativeAssociationList"
+    StudentDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/StudentDetail"
+    StudentListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentSummary"
+
+    LessonStudentSummary:
+      type: object
+      additionalProperties: false
+      required: [id, firstName, lastName]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        firstName:
+          type: string
+          pattern: '\S'
+        lastName:
+          type: string
+          pattern: '\S'
+    Lesson:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - studentId
+        - agencyId
+        - startsAt
+        - endsAt
+        - status
+        - hourlyRateCents
+        - amountCents
+        - notes
+        - createdAt
+        - updatedAt
+        - student
+        - agency
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        studentId:
+          $ref: "#/components/schemas/Uuid"
+        agencyId:
+          $ref: "#/components/schemas/Uuid"
+        startsAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        endsAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        status:
+          $ref: "#/components/schemas/LessonStatus"
+        hourlyRateCents:
+          $ref: "#/components/schemas/PositivePostgresInteger"
+        amountCents:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        createdAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        updatedAt:
+          $ref: "#/components/schemas/UtcDateTime"
+        student:
+          $ref: "#/components/schemas/LessonStudentSummary"
+        agency:
+          $ref: "#/components/schemas/AgencySummary"
+    LessonWritableFields:
+      type: object
+      properties:
+        studentId:
+          $ref: "#/components/schemas/Uuid"
+        agencyId:
+          $ref: "#/components/schemas/Uuid"
+        startsAt:
+          $ref: "#/components/schemas/ZonedDateTimeInput"
+        endsAt:
+          $ref: "#/components/schemas/ZonedDateTimeInput"
+        status:
+          $ref: "#/components/schemas/LessonStatus"
+        hourlyRateCents:
+          $ref: "#/components/schemas/PositivePostgresInteger"
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+    CreateLessonInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/LessonWritableFields"
+        - type: object
+          required: [studentId, startsAt, endsAt]
+          properties:
+            status:
+              allOf:
+                - $ref: "#/components/schemas/LessonStatus"
+              default: PLANNED
+      example:
+        studentId: 00000000-0000-4000-8000-000000000030
+        startsAt: "2026-08-03T14:00:00+02:00"
+        endsAt: "2026-08-03T15:30:00+02:00"
+        status: PLANNED
+        hourlyRateCents: 3000
+        notes: null
+    UpdateLessonInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/LessonWritableFields"
+        - type: object
+          minProperties: 1
+    LessonResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Lesson"
+    LessonListResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lesson"
+
+    StatisticsPeriod:
+      type: object
+      additionalProperties: false
+      required: [from, to, timeZone]
+      properties:
+        from:
+          $ref: "#/components/schemas/UtcDateTime"
+        to:
+          $ref: "#/components/schemas/UtcDateTime"
+        timeZone:
+          type: string
+          example: Europe/Paris
+    StatisticsSummaryPeriod:
+      type: object
+      additionalProperties: false
+      required: [from, to, timeZone, currency]
+      properties:
+        from:
+          $ref: "#/components/schemas/UtcDateTime"
+        to:
+          $ref: "#/components/schemas/UtcDateTime"
+        timeZone:
+          type: string
+          example: Europe/Paris
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: EUR
+    StatisticsAggregate:
+      type: object
+      required: [lessonCount, durationMinutes, amountCents]
+      properties:
+        lessonCount:
+          $ref: "#/components/schemas/AggregateInteger"
+        durationMinutes:
+          $ref: "#/components/schemas/AggregateInteger"
+        amountCents:
+          $ref: "#/components/schemas/AggregateInteger"
+    StatisticsByStatus:
+      type: object
+      additionalProperties: false
+      required: [PLANNED, COMPLETED, CANCELLED]
+      properties:
+        PLANNED:
+          $ref: "#/components/schemas/StatisticsAggregate"
+        COMPLETED:
+          $ref: "#/components/schemas/StatisticsAggregate"
+        CANCELLED:
+          $ref: "#/components/schemas/StatisticsAggregate"
+    StatisticsSummary:
+      type: object
+      additionalProperties: false
+      required: [period, byStatus]
+      properties:
+        period:
+          $ref: "#/components/schemas/StatisticsSummaryPeriod"
+        byStatus:
+          $ref: "#/components/schemas/StatisticsByStatus"
+    StatisticsTimelineItem:
+      type: object
+      additionalProperties: false
+      required: [periodStart, lessonCount, durationMinutes, amountCents]
+      properties:
+        periodStart:
+          type: string
+          format: date
+        lessonCount:
+          $ref: "#/components/schemas/AggregateInteger"
+        durationMinutes:
+          $ref: "#/components/schemas/AggregateInteger"
+        amountCents:
+          $ref: "#/components/schemas/AggregateInteger"
+    StatisticsTimeline:
+      type: object
+      additionalProperties: false
+      required: [period, groupBy, status, items]
+      properties:
+        period:
+          $ref: "#/components/schemas/StatisticsPeriod"
+        groupBy:
+          type: string
+          enum: [day, week, month]
+        status:
+          $ref: "#/components/schemas/LessonStatus"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatisticsTimelineItem"
+    StatisticsStudentItem:
+      type: object
+      additionalProperties: false
+      required: [student, lessonCount, durationMinutes, amountCents]
+      properties:
+        student:
+          $ref: "#/components/schemas/LessonStudentSummary"
+        lessonCount:
+          $ref: "#/components/schemas/AggregateInteger"
+        durationMinutes:
+          $ref: "#/components/schemas/AggregateInteger"
+        amountCents:
+          $ref: "#/components/schemas/AggregateInteger"
+    StatisticsAgencyItem:
+      type: object
+      additionalProperties: false
+      required: [agency, lessonCount, durationMinutes, amountCents]
+      properties:
+        agency:
+          $ref: "#/components/schemas/AgencySummary"
+        lessonCount:
+          $ref: "#/components/schemas/AggregateInteger"
+        durationMinutes:
+          $ref: "#/components/schemas/AggregateInteger"
+        amountCents:
+          $ref: "#/components/schemas/AggregateInteger"
+    StatisticsBreakdown:
+      type: object
+      additionalProperties: false
+      required: [period, status, items]
+      properties:
+        period:
+          $ref: "#/components/schemas/StatisticsPeriod"
+        status:
+          $ref: "#/components/schemas/LessonStatus"
+        items:
+          type: array
+    StatisticsSummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/StatisticsSummary"
+    StatisticsTimelineResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/StatisticsTimeline"
+    StatisticsByStudentResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/StatisticsBreakdown"
+            - type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/StatisticsStudentItem"
+    StatisticsByAgencyResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/StatisticsBreakdown"
+            - type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/StatisticsAgencyItem"

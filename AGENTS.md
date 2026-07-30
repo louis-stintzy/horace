@@ -58,6 +58,22 @@
 - Centraliser la traduction des erreurs en réponses HTTP.
 - Ne jamais exposer une erreur Prisma, une stack trace ou un secret au client.
 
+## Contrat HTTP
+
+- `docs/api/openapi.yaml` est la source contractuelle OpenAPI 3.1 de l'API.
+- Avant tout travail sur un frontend ou un client HTTP, lire ce contrat.
+- Toute modification d'une route, d'un paramètre, d'un corps, d'un statut HTTP,
+  d'un code d'erreur ou d'une réponse doit mettre à jour le contrat dans la
+  même tâche.
+- Le contrat décrit uniquement le comportement réellement implémenté et reste
+  cohérent avec les tests d'intégration.
+- Ne jamais inventer côté client un champ ou un endpoint absent du contrat.
+- Réutiliser les schémas, paramètres et réponses communs dans `components`
+  sans masquer les différences métier entre opérations.
+- Ne pas déclarer de mécanisme de sécurité OpenAPI avant l'implémentation de
+  l'authentification. `DEV_USER_ID` est un détail serveur provisoire, pas une
+  donnée fournie par le client.
+
 ## Sécurité
 
 - Ne jamais versionner un fichier `.env` ni le client Prisma généré.

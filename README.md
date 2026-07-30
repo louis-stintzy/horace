@@ -291,6 +291,94 @@ Codes HTTP principaux :
 - `404` : cours, élève ou agence absent pour l'utilisateur courant ;
 - `409` : ressource inactive, tarif requis ou montant hors plage.
 
+## API des statistiques
+
+Les statistiques sont calculées dynamiquement depuis les cours :
+
+```text
+GET /api/v1/statistics/summary
+GET /api/v1/statistics/timeline
+GET /api/v1/statistics/by-student
+GET /api/v1/statistics/by-agency
+```
+
+Tous les endpoints exigent `from` et `to`, sous forme de dates ISO 8601 avec
+fuseau explicite. `from` est inclusif et `to` exclusif. Les regroupements
+civils utilisent le fuseau de l'utilisateur ; les semaines commencent le
+lundi.
+
+La synthèse accepte aussi `studentId` et `agencyId` :
+
+```json
+{
+  "data": {
+    "period": {
+      "from": "2026-07-01T00:00:00.000Z",
+      "to": "2026-08-01T00:00:00.000Z",
+      "timeZone": "Europe/Paris",
+      "currency": "EUR"
+    },
+    "byStatus": {
+      "PLANNED": {
+        "lessonCount": 2,
+        "durationMinutes": 120,
+        "amountCents": 5400
+      },
+      "COMPLETED": {
+        "lessonCount": 12,
+        "durationMinutes": 900,
+        "amountCents": 40500
+      },
+      "CANCELLED": {
+        "lessonCount": 1,
+        "durationMinutes": 60,
+        "amountCents": 0
+      }
+    }
+  }
+}
+```
+
+La timeline exige `groupBy=day|week|month`. Elle accepte `status`,
+`studentId` et `agencyId`. Le statut vaut `COMPLETED` par défaut :
+
+```json
+{
+  "data": {
+    "period": {
+      "from": "2026-07-01T00:00:00.000Z",
+      "to": "2026-08-01T00:00:00.000Z",
+      "timeZone": "Europe/Paris"
+    },
+    "groupBy": "week",
+    "status": "COMPLETED",
+    "items": [
+      {
+        "periodStart": "2026-07-06",
+        "lessonCount": 4,
+        "durationMinutes": 300,
+        "amountCents": 13500
+      }
+    ]
+  }
+}
+```
+
+`by-student` accepte `status` et `agencyId`; `by-agency` accepte `status` et
+`studentId`. Leur statut par défaut est également `COMPLETED`. Chaque élément
+contient le résumé de l'élève ou de l'agence suivi de `lessonCount`,
+`durationMinutes` et `amountCents`.
+
+`COMPLETED` représente le réalisé, `PLANNED` le prévisionnel et `CANCELLED`
+l'annulé. Les annulations conservent leur nombre et leur durée mais leur
+montant vaut zéro. Les durées sont agrégées puis arrondies à la minute entière
+la plus proche ; les montants restent des centimes entiers.
+
+Les répartitions historiques utilisent toujours `Lesson.agencyId` et
+`Lesson.amountCents`. Modifier ensuite l'agence ou le tarif par défaut de
+l'élève ne change donc pas les résultats. Les élèves et agences désactivés
+restent inclus.
+
 ## Avertissement de sécurité
 
 L'API ne possède encore aucune authentification. Le modèle est multi-utilisateur,

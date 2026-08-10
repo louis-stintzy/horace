@@ -1,6 +1,8 @@
 import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
@@ -11,6 +13,7 @@ export default defineConfig(
       "**/coverage/**",
       "apps/api/src/generated/prisma/**",
       "apps/api/prisma/migrations/**",
+      "apps/web/src/shared/api/generated/**",
     ],
   },
   {
@@ -40,6 +43,44 @@ export default defineConfig(
           argsIgnorePattern: "^_",
         },
       ],
+    },
+  },
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommendedTypeChecked,
+      reactHooks.configs.flat.recommended,
+    ],
+    plugins: {
+      "react-refresh": reactRefresh,
+    },
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      ...reactRefresh.configs.vite.rules,
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/vite.config.ts"],
+    extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
 );

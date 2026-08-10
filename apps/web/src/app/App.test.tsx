@@ -39,9 +39,11 @@ describe("navigation et santé", () => {
 
   it("affiche une santé indisponible et permet une nouvelle tentative", async () => {
     let attempts = 0;
+
     server.use(
       http.get("/api/v1/health", () => {
         attempts += 1;
+
         return attempts === 1
           ? HttpResponse.json(
               {
@@ -55,14 +57,22 @@ describe("navigation et santé", () => {
           : HttpResponse.json({ status: "ok" });
       }),
     );
+
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(await screen.findByRole("button", { name: "Réessayer" }));
+    expect(
+      await screen.findByRole("heading", {
+        name: "Service indisponible",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Réessayer" }));
 
     expect(
       await screen.findByText("API et base de données disponibles"),
     ).toBeInTheDocument();
+
     expect(attempts).toBe(2);
   });
 });

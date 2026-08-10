@@ -3,6 +3,7 @@ import { ApiError } from "../api/api-error";
 interface ErrorStateProps {
   error: unknown;
   onRetry: () => void;
+  title?: string;
 }
 
 function errorMessage(error: unknown) {
@@ -15,10 +16,14 @@ function errorMessage(error: unknown) {
   return "Une erreur inattendue est survenue.";
 }
 
-export function ErrorState({ error, onRetry }: ErrorStateProps) {
+export function ErrorState({
+  error,
+  onRetry,
+  title = "Impossible de charger les données",
+}: ErrorStateProps) {
   return (
     <section className="state-panel state-panel--error" role="alert">
-      <h2>Impossible de charger les données</h2>
+      <h2>{title}</h2>
       <p>{errorMessage(error)}</p>
       <button className="button" onClick={onRetry} type="button">
         Réessayer

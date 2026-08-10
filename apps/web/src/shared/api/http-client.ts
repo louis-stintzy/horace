@@ -49,8 +49,11 @@ async function readPayload(response: Response): Promise<unknown> {
 
   try {
     return JSON.parse(text) as unknown;
-  } catch {
-    return undefined;
+  } catch (error: unknown) {
+    throw new ApiError("L’API a renvoyé une réponse JSON invalide.", {
+      status: response.status,
+      cause: error,
+    });
   }
 }
 

@@ -27,6 +27,7 @@ export function HomePage() {
           <ErrorState
             error={healthQuery.error}
             onRetry={() => void healthQuery.refetch()}
+            title="Service indisponible"
           />
         ) : null}
         {healthQuery.isSuccess ? (

@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 
 import { server } from "../test/mocks/server";
@@ -69,12 +69,16 @@ describe("page agences", () => {
     expect(
       await screen.findByText("Service temporairement indisponible."),
     ).toBeInTheDocument();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Impossible de charger les agences",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("affiche une erreur réseau", async () => {
-    server.use(
-      http.get("/api/v1/agencies", () => HttpResponse.error()),
-    );
+    server.use(http.get("/api/v1/agencies", () => HttpResponse.error()));
     renderApp("/agencies");
 
     expect(
@@ -103,5 +107,27 @@ describe("page agences", () => {
       await screen.findByRole("heading", { name: "Agence active" }),
     ).toBeInTheDocument();
     expect(attempts).toBe(2);
+  });
+
+  it("affiche un état de chargement accessible", async () => {
+    server.use(
+      http.get("/api/v1/agencies", async () => {
+        await delay(100);
+
+        return HttpResponse.json({ data: agencies });
+      }),
+    );
+
+    renderApp("/agencies");
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Chargement des agences…",
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Agence active",
+      }),
+    ).toBeInTheDocument();
   });
 });

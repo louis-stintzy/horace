@@ -23,6 +23,7 @@ export function AgenciesPage() {
         <ErrorState
           error={agenciesQuery.error}
           onRetry={() => void agenciesQuery.refetch()}
+          title="Impossible de charger les agences"
         />
       ) : null}
       {agenciesQuery.isSuccess && agenciesQuery.data.length === 0 ? (

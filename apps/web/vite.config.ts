@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      host: "0.0.0.0",
       proxy: {
         "/api": {
           target: viteEnv.VITE_API_PROXY_TARGET ?? "http://localhost:3000",

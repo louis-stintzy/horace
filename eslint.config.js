@@ -13,6 +13,7 @@ export default defineConfig(
       "**/coverage/**",
       "apps/api/src/generated/prisma/**",
       "apps/api/prisma/migrations/**",
+      "apps/web/src/shared/api/generated/**",
     ],
   },
   {

@@ -1,10 +1,10 @@
-import type { components } from "./generated/schema";
+import { healthResponseSchema } from "./health.schema";
+import type { HealthResponse } from "./health.types";
 import { request } from "./http-client";
-
-export type HealthResponse = components["schemas"]["HealthResponse"];
 
 export function getHealth({ signal }: { signal?: AbortSignal } = {}) {
   return request<HealthResponse>("/health", {
+    schema: healthResponseSchema,
     ...(signal === undefined ? {} : { signal }),
   });
 }

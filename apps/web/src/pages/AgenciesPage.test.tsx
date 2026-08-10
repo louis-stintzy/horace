@@ -77,6 +77,22 @@ describe("page agences", () => {
     ).toBeInTheDocument();
   });
 
+  it("affiche une erreur sans crasher pour une réponse nominale invalide", async () => {
+    server.use(
+      http.get("/api/v1/agencies", () => HttpResponse.json({})),
+    );
+    renderApp("/agencies");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Impossible de charger les agences",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("L’API a renvoyé une réponse invalide."),
+    ).toBeInTheDocument();
+  });
+
   it("affiche une erreur réseau", async () => {
     server.use(http.get("/api/v1/agencies", () => HttpResponse.error()));
     renderApp("/agencies");

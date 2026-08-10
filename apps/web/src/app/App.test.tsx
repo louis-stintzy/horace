@@ -75,4 +75,20 @@ describe("navigation et santé", () => {
 
     expect(attempts).toBe(2);
   });
+
+  it("rejette une réponse de santé nominale invalide", async () => {
+    server.use(
+      http.get("/api/v1/health", () =>
+        HttpResponse.json({ status: "unexpected" }),
+      ),
+    );
+    renderApp();
+
+    expect(
+      await screen.findByRole("heading", { name: "Service indisponible" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("API et base de données disponibles"),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -78,6 +78,10 @@
 - Les types frontend générés depuis OpenAPI ne sont jamais modifiés
   manuellement. Après une modification du contrat, les régénérer et vérifier
   leur dérive dans la même tâche.
+- Les types OpenAPI assurent la sécurité statique, mais toute réponse nominale
+  API consommée par le frontend doit aussi être validée au runtime avec Zod
+  avant utilisation. Ne jamais remplacer cette validation par un cast
+  TypeScript `as`.
 
 ## Sécurité
 

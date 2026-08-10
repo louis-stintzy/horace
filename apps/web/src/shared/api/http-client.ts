@@ -1,10 +1,12 @@
 import { ApiError, type ValidationDetail } from "./api-error";
+import type { z } from "zod";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 type QueryValue = boolean | number | string | null | undefined;
 
-interface RequestOptions {
+interface RequestOptions<TResponse> {
+  schema: z.ZodType<TResponse>;
   method?: "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
   query?: Record<string, QueryValue>;
   body?: unknown;
@@ -98,7 +100,7 @@ function toApiError(response: Response, payload: unknown) {
 
 export async function request<TResponse>(
   path: string,
-  options: RequestOptions = {},
+  options: RequestOptions<TResponse>,
 ): Promise<TResponse> {
   const hasBody = options.body !== undefined;
   let response: Response;
@@ -127,5 +129,13 @@ export async function request<TResponse>(
     throw toApiError(response, payload);
   }
 
-  return payload as TResponse;
+  const validationResult = options.schema.safeParse(payload);
+  if (!validationResult.success) {
+    throw new ApiError("L’API a renvoyé une réponse invalide.", {
+      status: response.status,
+      cause: validationResult.error,
+    });
+  }
+
+  return validationResult.data;
 }

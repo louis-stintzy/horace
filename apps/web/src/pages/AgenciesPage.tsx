@@ -1,7 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
+import { getAgencyMutationErrorMessage } from "../features/agencies/agency-errors";
+import {
+  useCreateAgencyMutation,
+  useUpdateAgencyMutation,
+} from "../features/agencies/api/agency.mutations";
 import { agencyListQueryOptions } from "../features/agencies/api/agency.queries";
+import {
+  AgencyForm,
+  type AgencyFormValues,
+} from "../features/agencies/components/AgencyForm";
 import { AgencyList } from "../features/agencies/components/AgencyList";
+import type {
+  Agency,
+  CreateAgencyInput,
+  UpdateAgencyInput,
+} from "../features/agencies/types";
 import { EmptyState } from "../shared/components/EmptyState";
 import { ErrorState } from "../shared/components/ErrorState";
 import { LoadingState } from "../shared/components/LoadingState";
@@ -9,12 +24,153 @@ import { PageHeader } from "../shared/components/PageHeader";
 
 export function AgenciesPage() {
   const agenciesQuery = useQuery(agencyListQueryOptions());
+  const createMutation = useCreateAgencyMutation();
+  const editMutation = useUpdateAgencyMutation();
+  const statusMutation = useUpdateAgencyMutation();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingAgency, setEditingAgency] = useState<Agency>();
+  const [statusAgencyId, setStatusAgencyId] = useState<string>();
+  const [feedback, setFeedback] = useState<string>();
+
+  const openCreateForm = () => {
+    createMutation.reset();
+    setEditingAgency(undefined);
+    setIsCreateOpen(true);
+    setFeedback(undefined);
+  };
+
+  const openEditForm = (agency: Agency) => {
+    editMutation.reset();
+    setIsCreateOpen(false);
+    setEditingAgency(agency);
+    setFeedback(undefined);
+  };
+
+  const submitCreate = async (values: AgencyFormValues) => {
+    const normalizedNotes = values.notes.trim();
+    const input: CreateAgencyInput = {
+      name: values.name.trim(),
+      ...(normalizedNotes ? { notes: normalizedNotes } : {}),
+    };
+
+    try {
+      const agency = await createMutation.mutateAsync(input);
+      setIsCreateOpen(false);
+      setFeedback(`L’agence « ${agency.name} » a été créée.`);
+    } catch {
+      // TanStack Query conserve l'erreur pour le rendu du formulaire.
+    }
+  };
+
+  const submitEdit = async (
+    values: AgencyFormValues,
+    dirtyFields: Partial<Record<keyof AgencyFormValues, boolean>>,
+  ) => {
+    if (!editingAgency) {
+      return;
+    }
+
+    const input: UpdateAgencyInput = {
+      ...(dirtyFields.name ? { name: values.name.trim() } : {}),
+      ...(dirtyFields.notes
+        ? { notes: values.notes.trim() || null }
+        : {}),
+    };
+
+    try {
+      const agency = await editMutation.mutateAsync({
+        id: editingAgency.id,
+        input,
+      });
+      setEditingAgency(undefined);
+      setFeedback(`L’agence « ${agency.name} » a été modifiée.`);
+    } catch {
+      // TanStack Query conserve l'erreur pour le rendu du formulaire.
+    }
+  };
+
+  const toggleAgencyStatus = async (agency: Agency) => {
+    statusMutation.reset();
+    setStatusAgencyId(agency.id);
+    setFeedback(undefined);
+
+    try {
+      const updatedAgency = await statusMutation.mutateAsync({
+        id: agency.id,
+        input: { isActive: !agency.isActive },
+      });
+      setFeedback(
+        `L’agence « ${updatedAgency.name} » est maintenant ${updatedAgency.isActive ? "active" : "inactive"}.`,
+      );
+    } catch {
+      // TanStack Query conserve l'erreur pour le rendu de la page.
+    } finally {
+      setStatusAgencyId(undefined);
+    }
+  };
 
   return (
     <>
       <PageHeader title="Agences">
-        <p>Consultez les agences liées à votre activité.</p>
+        <p>Consultez et gérez les agences liées à votre activité.</p>
+        {!isCreateOpen ? (
+          <button className="button" onClick={openCreateForm} type="button">
+            Ajouter une agence
+          </button>
+        ) : null}
       </PageHeader>
+
+      {feedback ? (
+        <div className="state-panel" role="status">
+          <p>{feedback}</p>
+        </div>
+      ) : null}
+
+      {statusMutation.isError ? (
+        <section className="state-panel state-panel--error" role="alert">
+          <h2>Impossible de modifier l’état de l’agence</h2>
+          <p>{getAgencyMutationErrorMessage(statusMutation.error)}</p>
+        </section>
+      ) : null}
+
+      {isCreateOpen ? (
+        <section className="state-panel" aria-labelledby="create-agency-title">
+          <h2 id="create-agency-title">Nouvelle agence</h2>
+          <AgencyForm
+            errorMessage={
+              createMutation.isError
+                ? getAgencyMutationErrorMessage(createMutation.error)
+                : undefined
+            }
+            isSubmitting={createMutation.isPending}
+            onCancel={() => {
+              createMutation.reset();
+              setIsCreateOpen(false);
+            }}
+            onSubmit={submitCreate}
+          />
+        </section>
+      ) : null}
+
+      {editingAgency ? (
+        <section className="state-panel" aria-labelledby="edit-agency-title">
+          <h2 id="edit-agency-title">Modifier {editingAgency.name}</h2>
+          <AgencyForm
+            agency={editingAgency}
+            errorMessage={
+              editMutation.isError
+                ? getAgencyMutationErrorMessage(editMutation.error)
+                : undefined
+            }
+            isSubmitting={editMutation.isPending}
+            onCancel={() => {
+              editMutation.reset();
+              setEditingAgency(undefined);
+            }}
+            onSubmit={submitEdit}
+          />
+        </section>
+      ) : null}
 
       {agenciesQuery.isPending ? (
         <LoadingState message="Chargement des agences…" />
@@ -33,7 +189,14 @@ export function AgenciesPage() {
         />
       ) : null}
       {agenciesQuery.isSuccess && agenciesQuery.data.length > 0 ? (
-        <AgencyList agencies={agenciesQuery.data} />
+        <AgencyList
+          agencies={agenciesQuery.data}
+          onEdit={openEditForm}
+          onToggleStatus={(agency) => void toggleAgencyStatus(agency)}
+          {...(statusAgencyId === undefined
+            ? {}
+            : { pendingStatusAgencyId: statusAgencyId })}
+        />
       ) : null}
     </>
   );

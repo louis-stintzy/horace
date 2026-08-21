@@ -189,7 +189,7 @@ a {
   cursor: pointer;
 }
 
-.button:hover {
+.button:not(:disabled):hover {
   background: var(--color-primary-dark);
 }
 

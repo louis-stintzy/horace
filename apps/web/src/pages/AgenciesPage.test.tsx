@@ -98,9 +98,7 @@ describe("page agences", () => {
   });
 
   it("affiche une erreur sans crasher pour une réponse nominale invalide", async () => {
-    server.use(
-      http.get("/api/v1/agencies", () => HttpResponse.json({})),
-    );
+    server.use(http.get("/api/v1/agencies", () => HttpResponse.json({})));
     renderApp("/agencies");
 
     expect(
@@ -171,13 +169,21 @@ describe("page agences", () => {
     const user = userEvent.setup();
     renderApp("/agencies");
 
-    await user.click(screen.getByRole("button", { name: "Ajouter une agence" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une agence" }),
+    );
     expect(
       screen.getByRole("heading", { name: "Nouvelle agence" }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Créer l’agence" }));
     expect(await screen.findByText("Le nom est requis.")).toBeInTheDocument();
+
+    const nameInput = screen.getByLabelText("Nom");
+    const nameError = screen.getByText("Le nom est requis.");
+
+    expect(nameInput).toHaveAttribute("aria-describedby", nameError.id);
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
   });
 
   it("crée une agence et actualise la liste", async () => {
@@ -199,7 +205,9 @@ describe("page agences", () => {
     renderApp("/agencies");
 
     await screen.findByRole("heading", { name: "Agence active" });
-    await user.click(screen.getByRole("button", { name: "Ajouter une agence" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une agence" }),
+    );
     await user.type(screen.getByLabelText("Nom"), "Nouvelle agence");
     await user.type(screen.getByLabelText(/Notes/), "Notes de création");
     await user.click(screen.getByRole("button", { name: "Créer l’agence" }));
@@ -229,7 +237,9 @@ describe("page agences", () => {
     const user = userEvent.setup();
     renderApp("/agencies");
 
-    await user.click(screen.getByRole("button", { name: "Ajouter une agence" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une agence" }),
+    );
     await user.type(screen.getByLabelText("Nom"), "Agence existante");
     await user.click(screen.getByRole("button", { name: "Créer l’agence" }));
 
@@ -240,21 +250,23 @@ describe("page agences", () => {
 
   it("refuse un faux succès de création hors contrat", async () => {
     server.use(
-      http.post("/api/v1/agencies", () => HttpResponse.json({}, { status: 201 })),
+      http.post("/api/v1/agencies", () =>
+        HttpResponse.json({}, { status: 201 }),
+      ),
     );
     const user = userEvent.setup();
     renderApp("/agencies");
 
-    await user.click(screen.getByRole("button", { name: "Ajouter une agence" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une agence" }),
+    );
     await user.type(screen.getByLabelText("Nom"), "Réponse invalide");
     await user.click(screen.getByRole("button", { name: "Créer l’agence" }));
 
     expect(
       await screen.findByText("L’API a renvoyé une réponse invalide."),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/a été créée/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/a été créée/)).not.toBeInTheDocument();
   });
 
   it("modifie une agence avec ses valeurs initiales", async () => {
@@ -303,6 +315,85 @@ describe("page agences", () => {
     expect(
       await screen.findByRole("heading", { name: "Agence renommée" }),
     ).toBeInTheDocument();
+  });
+
+  it("n’envoie que les champs modifiés pendant l’édition", async () => {
+    server.use(
+      http.get("/api/v1/agencies", () => HttpResponse.json({ data: agencies })),
+
+      http.patch("/api/v1/agencies/:id", async ({ request }) => {
+        expect(await request.json()).toEqual({
+          name: "Agence renommée",
+        });
+
+        const updatedAgency = {
+          ...agencies[0]!,
+          name: "Agence renommée",
+          updatedAt: "2026-08-11T09:00:00.000Z",
+        };
+
+        return HttpResponse.json({
+          data: updatedAgency,
+        });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderApp("/agencies");
+
+    await screen.findByRole("heading", {
+      name: "Agence active",
+    });
+    await user.click(
+      firstAgencyCard().getByRole("button", {
+        name: "Modifier",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Nom"));
+    await user.type(screen.getByLabelText("Nom"), "Agence renommée");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer les modifications",
+      }),
+    );
+    await screen.findByText("L’agence « Agence renommée » a été modifiée.");
+  });
+
+  it("actualise le formulaire lorsqu’une autre agence est sélectionnée", async () => {
+    server.use(
+      http.get("/api/v1/agencies", () => HttpResponse.json({ data: agencies })),
+    );
+
+    const user = userEvent.setup();
+    renderApp("/agencies");
+
+    await screen.findByRole("heading", {
+      name: "Agence active",
+    });
+
+    const agencyItems = within(
+      screen.getByRole("list", {
+        name: "Liste des agences",
+      }),
+    ).getAllByRole("listitem");
+
+    await user.click(
+      within(agencyItems[0]!).getByRole("button", {
+        name: "Modifier",
+      }),
+    );
+
+    expect(screen.getByLabelText("Nom")).toHaveValue("Agence active");
+    expect(screen.getByLabelText(/Notes/)).toHaveValue("Note utile");
+
+    await user.click(
+      within(agencyItems[1]!).getByRole("button", {
+        name: "Modifier",
+      }),
+    );
+
+    expect(screen.getByLabelText("Nom")).toHaveValue("Agence historique");
+    expect(screen.getByLabelText(/Notes/)).toHaveValue("");
   });
 
   it("affiche une erreur métier pendant la modification", async () => {
@@ -368,11 +459,11 @@ describe("page agences", () => {
     );
 
     expect(
-      await screen.findByText("L’agence « Agence active » est maintenant inactive."),
+      await screen.findByText(
+        "L’agence « Agence active » est maintenant inactive.",
+      ),
     ).toBeInTheDocument();
-    expect(
-      firstAgencyCard().getByText("Inactive"),
-    ).toBeInTheDocument();
+    expect(firstAgencyCard().getByText("Inactive")).toBeInTheDocument();
   });
 
   it("réactive une agence inactive", async () => {
@@ -442,8 +533,6 @@ describe("page agences", () => {
         "Terminez ou annulez les cours planifiés de cette agence avant de la désactiver.",
       ),
     ).toBeInTheDocument();
-    expect(
-      firstAgencyCard().getByText("Active"),
-    ).toBeInTheDocument();
+    expect(firstAgencyCard().getByText("Active")).toBeInTheDocument();
   });
 });

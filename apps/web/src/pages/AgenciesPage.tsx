@@ -34,6 +34,7 @@ export function AgenciesPage() {
 
   const openCreateForm = () => {
     createMutation.reset();
+    statusMutation.reset();
     setEditingAgency(undefined);
     setIsCreateOpen(true);
     setFeedback(undefined);
@@ -41,6 +42,7 @@ export function AgenciesPage() {
 
   const openEditForm = (agency: Agency) => {
     editMutation.reset();
+    statusMutation.reset();
     setIsCreateOpen(false);
     setEditingAgency(agency);
     setFeedback(undefined);
@@ -72,9 +74,7 @@ export function AgenciesPage() {
 
     const input: UpdateAgencyInput = {
       ...(dirtyFields.name ? { name: values.name.trim() } : {}),
-      ...(dirtyFields.notes
-        ? { notes: values.notes.trim() || null }
-        : {}),
+      ...(dirtyFields.notes ? { notes: values.notes.trim() || null } : {}),
     };
 
     try {
@@ -156,6 +156,7 @@ export function AgenciesPage() {
         <section className="state-panel" aria-labelledby="edit-agency-title">
           <h2 id="edit-agency-title">Modifier {editingAgency.name}</h2>
           <AgencyForm
+            key={editingAgency.id}
             agency={editingAgency}
             errorMessage={
               editMutation.isError

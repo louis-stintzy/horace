@@ -50,6 +50,14 @@ export function AgencyForm({
 
   const isEditing = agency !== undefined;
 
+  const formSuffix = isEditing ? agency.id : "new";
+
+  const nameId = `agency-name-${formSuffix}`;
+  const nameErrorId = `${nameId}-error`;
+
+  const notesId = `agency-notes-${formSuffix}`;
+  const notesErrorId = `${notesId}-error`;
+
   return (
     <form
       className={styles.form}
@@ -59,31 +67,41 @@ export function AgencyForm({
       }}
     >
       <div className={styles.field}>
-        <label htmlFor={isEditing ? `agency-name-${agency.id}` : "agency-name-new"}>
-          Nom
-        </label>
+        <label htmlFor={nameId}>Nom</label>
         <input
+          aria-describedby={errors.name ? nameErrorId : undefined}
           aria-invalid={errors.name ? "true" : "false"}
           autoComplete="organization"
-          id={isEditing ? `agency-name-${agency.id}` : "agency-name-new"}
+          id={nameId}
           maxLength={100}
           {...register("name")}
         />
-        {errors.name ? <p className={styles.error}>{errors.name.message}</p> : null}
+        {errors.name ? (
+          <p className={styles.error} id={nameErrorId}>
+            {errors.name.message}
+          </p>
+        ) : null}
       </div>
 
       <div className={styles.field}>
-        <label htmlFor={isEditing ? `agency-notes-${agency.id}` : "agency-notes-new"}>
+        <label htmlFor={notesId}>
           Notes <span>(facultatif)</span>
         </label>
+
         <textarea
+          aria-describedby={errors.notes ? notesErrorId : undefined}
           aria-invalid={errors.notes ? "true" : "false"}
-          id={isEditing ? `agency-notes-${agency.id}` : "agency-notes-new"}
+          id={notesId}
           maxLength={2_000}
           rows={4}
           {...register("notes")}
         />
-        {errors.notes ? <p className={styles.error}>{errors.notes.message}</p> : null}
+
+        {errors.notes ? (
+          <p className={styles.error} id={notesErrorId}>
+            {errors.notes.message}
+          </p>
+        ) : null}
       </div>
 
       {errorMessage ? (

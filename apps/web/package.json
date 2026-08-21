@@ -13,9 +13,11 @@
     "types:generate": "openapi-typescript ../../docs/api/openapi.yaml --output src/shared/api/generated/schema.d.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.7.1",
     "@tanstack/react-query": "^5.101.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-hook-form": "^7.85.0",
     "react-router-dom": "^7.18.2",
     "zod": "^4.4.3"
   },

@@ -130,6 +130,12 @@ a {
   margin: 0;
 }
 
+.state-panel + .state-panel,
+.state-panel + ul,
+.page-header + .state-panel {
+  margin-top: 1rem;
+}
+
 .state-panel--error {
   border-color: #e8b9b9;
 }
@@ -183,8 +189,13 @@ a {
   cursor: pointer;
 }
 
-.button:hover {
+.button:not(:disabled):hover {
   background: var(--color-primary-dark);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 @keyframes spin {

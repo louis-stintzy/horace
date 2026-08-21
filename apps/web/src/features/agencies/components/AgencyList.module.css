@@ -66,3 +66,36 @@
   color: var(--color-muted);
   white-space: pre-wrap;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.secondaryButton,
+.statusButton {
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  color: var(--color-primary-dark);
+  background: var(--color-surface);
+}
+
+.statusButton {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-dark);
+  background: #edf6f1;
+}
+
+.secondaryButton:disabled,
+.statusButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}

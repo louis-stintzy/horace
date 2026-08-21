@@ -67,6 +67,7 @@ a {
 
 .navigation {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   margin: 0;
   padding: 0;

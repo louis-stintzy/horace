@@ -535,4 +535,84 @@ describe("page agences", () => {
     ).toBeInTheDocument();
     expect(firstAgencyCard().getByText("Active")).toBeInTheDocument();
   });
+
+  it("bloque les autres actions pendant une modification en cours", async () => {
+    let currentAgencies = agencies;
+
+    server.use(
+      http.get("/api/v1/agencies", () =>
+        HttpResponse.json({ data: currentAgencies }),
+      ),
+
+      http.patch("/api/v1/agencies/:id", async () => {
+        await delay(150);
+
+        const updatedAgency = {
+          ...agencies[0]!,
+          name: "Agence renommée",
+          updatedAt: "2026-08-11T11:00:00.000Z",
+        };
+
+        currentAgencies = [updatedAgency, agencies[1]!];
+
+        return HttpResponse.json({
+          data: updatedAgency,
+        });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderApp("/agencies");
+
+    await screen.findByRole("heading", {
+      name: "Agence active",
+    });
+
+    await user.click(
+      firstAgencyCard().getByRole("button", {
+        name: "Modifier",
+      }),
+    );
+
+    await user.clear(screen.getByLabelText("Nom"));
+    await user.type(screen.getByLabelText("Nom"), "Agence renommée");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer les modifications",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Enregistrement…",
+      }),
+    ).toBeDisabled();
+
+    const agencyList = screen.getByRole("list", {
+      name: "Liste des agences",
+    });
+
+    for (const button of within(agencyList).getAllByRole("button", {
+      name: "Modifier",
+    })) {
+      expect(button).toBeDisabled();
+    }
+
+    expect(
+      screen.getByRole("button", {
+        name: "Ajouter une agence",
+      }),
+    ).toBeDisabled();
+
+    expect(
+      firstAgencyCard().getByRole("button", {
+        name: "Désactiver",
+      }),
+    ).toBeDisabled();
+
+    expect(
+      await screen.findByText("L’agence « Agence renommée » a été modifiée."),
+    ).toBeInTheDocument();
+  });
 });

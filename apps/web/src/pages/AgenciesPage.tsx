@@ -32,6 +32,11 @@ export function AgenciesPage() {
   const [statusAgencyId, setStatusAgencyId] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
 
+  const isAgencyWritePending =
+    createMutation.isPending ||
+    editMutation.isPending ||
+    statusMutation.isPending;
+
   const openCreateForm = () => {
     createMutation.reset();
     statusMutation.reset();
@@ -114,7 +119,12 @@ export function AgenciesPage() {
       <PageHeader title="Agences">
         <p>Consultez et gérez les agences liées à votre activité.</p>
         {!isCreateOpen ? (
-          <button className="button" onClick={openCreateForm} type="button">
+          <button
+            className="button"
+            disabled={isAgencyWritePending}
+            onClick={openCreateForm}
+            type="button"
+          >
             Ajouter une agence
           </button>
         ) : null}
@@ -192,6 +202,7 @@ export function AgenciesPage() {
       {agenciesQuery.isSuccess && agenciesQuery.data.length > 0 ? (
         <AgencyList
           agencies={agenciesQuery.data}
+          isWritePending={isAgencyWritePending}
           onEdit={openEditForm}
           onToggleStatus={(agency) => void toggleAgencyStatus(agency)}
           {...(statusAgencyId === undefined

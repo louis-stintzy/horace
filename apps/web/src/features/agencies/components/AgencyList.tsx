@@ -3,6 +3,7 @@ import styles from "./AgencyList.module.css";
 
 interface AgencyListProps {
   agencies: Agency[];
+  isWritePending: boolean;
   pendingStatusAgencyId?: string;
   onEdit: (agency: Agency) => void;
   onToggleStatus: (agency: Agency) => void;
@@ -10,6 +11,7 @@ interface AgencyListProps {
 
 export function AgencyList({
   agencies,
+  isWritePending,
   pendingStatusAgencyId,
   onEdit,
   onToggleStatus,
@@ -20,9 +22,7 @@ export function AgencyList({
         <li className={styles.card} key={agency.id}>
           <div className={styles.heading}>
             <h2>{agency.name}</h2>
-            <span
-              className={agency.isActive ? styles.active : styles.inactive}
-            >
+            <span className={agency.isActive ? styles.active : styles.inactive}>
               {agency.isActive ? "Active" : "Inactive"}
             </span>
           </div>
@@ -30,15 +30,16 @@ export function AgencyList({
           <div className={styles.actions}>
             <button
               className={styles.secondaryButton}
-              disabled={pendingStatusAgencyId === agency.id}
+              disabled={isWritePending}
               onClick={() => onEdit(agency)}
               type="button"
             >
               Modifier
             </button>
+
             <button
               className={styles.statusButton}
-              disabled={pendingStatusAgencyId !== undefined}
+              disabled={isWritePending}
               onClick={() => onToggleStatus(agency)}
               type="button"
             >

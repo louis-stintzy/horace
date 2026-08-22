@@ -8,6 +8,11 @@ export type RepresentativeListResponse =
 type RepresentativeWritableFields =
   components["schemas"]["RepresentativeWritableFields"];
 
+// openapi-typescript 7.13 génère actuellement les inputs Representative
+// basés sur `allOf` + `unevaluatedProperties: false` avec une intersection
+// `Record<string, never>`, ce qui les rend inutilisables.
+// On dérive donc temporairement les inputs depuis RepresentativeWritableFields
+// tout en conservant les champs obligatoires définis par OpenAPI.
 export type CreateRepresentativeInput = Required<
   Pick<RepresentativeWritableFields, "firstName" | "lastName">
 > &

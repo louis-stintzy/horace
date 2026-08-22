@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
@@ -105,9 +105,7 @@ describe("page représentants", () => {
   });
 
   it("affiche une erreur réseau", async () => {
-    server.use(
-      http.get("/api/v1/representatives", () => HttpResponse.error()),
-    );
+    server.use(http.get("/api/v1/representatives", () => HttpResponse.error()));
     renderApp("/representatives");
 
     expect(
@@ -281,12 +279,21 @@ describe("page représentants", () => {
 
     await screen.findByRole("heading", { name: "Camille Martin" });
     const cards = representativeCards();
-    await user.click(within(cards[0]!).getByRole("button", { name: "Modifier" }));
+    await user.click(
+      within(cards[0]!).getByRole("button", { name: "Modifier" }),
+    );
     expect(screen.getByLabelText("Prénom")).toHaveValue("Camille");
     expect(screen.getByLabelText("Nom")).toHaveValue("Martin");
     expect(screen.getByLabelText(/Email/)).toHaveValue("camille@example.com");
+    expect(
+      screen.getByRole("button", {
+        name: "Enregistrer les modifications",
+      }),
+    ).toBeDisabled();
 
-    await user.click(within(cards[1]!).getByRole("button", { name: "Modifier" }));
+    await user.click(
+      within(cards[1]!).getByRole("button", { name: "Modifier" }),
+    );
     expect(screen.getByLabelText("Prénom")).toHaveValue("Alex");
     expect(screen.getByLabelText("Nom")).toHaveValue("Petit");
     expect(screen.getByLabelText(/Email/)).toHaveValue("");
@@ -319,7 +326,9 @@ describe("page représentants", () => {
 
     await screen.findByRole("heading", { name: "Camille Martin" });
     await user.click(
-      within(representativeCards()[0]!).getByRole("button", { name: "Modifier" }),
+      within(representativeCards()[0]!).getByRole("button", {
+        name: "Modifier",
+      }),
     );
     await user.clear(screen.getByLabelText("Nom"));
     await user.type(screen.getByLabelText("Nom"), "Bernard");
@@ -358,7 +367,9 @@ describe("page représentants", () => {
 
     await screen.findByRole("heading", { name: "Camille Martin" });
     await user.click(
-      within(representativeCards()[0]!).getByRole("button", { name: "Modifier" }),
+      within(representativeCards()[0]!).getByRole("button", {
+        name: "Modifier",
+      }),
     );
     await user.clear(screen.getByLabelText("Prénom"));
     await user.type(screen.getByLabelText("Prénom"), "Camilla");
@@ -371,17 +382,24 @@ describe("page représentants", () => {
         "Ce représentant n’existe plus ou n’est plus accessible.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Modifier Camille Martin",
+      }),
+    ).toBeInTheDocument();
   });
 
-  it("empêche une autre écriture et un changement de contexte pendant une mutation", async () => {
+  it("désactive les actions et empêche le changement de contexte pendant une mutation", async () => {
+    let currentRepresentatives = representatives;
     let postCount = 0;
     server.use(
       http.get("/api/v1/representatives", () =>
-        HttpResponse.json({ data: representatives }),
+        HttpResponse.json({ data: currentRepresentatives }),
       ),
       http.post("/api/v1/representatives", async () => {
         postCount += 1;
         await delay(150);
+        currentRepresentatives = [...representatives, createdRepresentative];
         return HttpResponse.json(
           { data: createdRepresentative },
           { status: 201 },
@@ -401,7 +419,9 @@ describe("page représentants", () => {
       screen.getByRole("button", { name: "Créer le représentant" }),
     );
 
-    expect(screen.getByRole("button", { name: "Enregistrement…" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Enregistrement…" }),
+    ).toBeDisabled();
     expect(screen.getByRole("button", { name: "Annuler" })).toBeDisabled();
     for (const button of screen.getAllByRole("button", { name: "Modifier" })) {
       expect(button).toBeDisabled();
@@ -414,6 +434,59 @@ describe("page représentants", () => {
     expect(
       await screen.findByText("Louise Durand a été ajouté."),
     ).toBeInTheDocument();
+    expect(postCount).toBe(1);
+  });
+
+  it("empêche deux créations concurrentes", async () => {
+    let currentRepresentatives = representatives;
+    let postCount = 0;
+
+    server.use(
+      http.get("/api/v1/representatives", () =>
+        HttpResponse.json({
+          data: currentRepresentatives,
+        }),
+      ),
+      http.post("/api/v1/representatives", async () => {
+        postCount += 1;
+        await delay(150);
+        currentRepresentatives = [...representatives, createdRepresentative];
+        return HttpResponse.json(
+          { data: createdRepresentative },
+          { status: 201 },
+        );
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderApp("/representatives");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Ajouter un représentant",
+      }),
+    );
+    await user.type(screen.getByLabelText("Prénom"), "Louise");
+    await user.type(screen.getByLabelText("Nom"), "Durand");
+
+    const submitButton = screen.getByRole("button", {
+      name: "Créer le représentant",
+    });
+    const form = submitButton.closest("form");
+
+    expect(form).not.toBeNull();
+
+    if (!form) {
+      throw new Error("Le formulaire de création est introuvable.");
+    }
+
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    expect(
+      await screen.findByText("Louise Durand a été ajouté."),
+    ).toBeInTheDocument();
+
     expect(postCount).toBe(1);
   });
 });

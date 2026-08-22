@@ -34,7 +34,11 @@ export function RepresentativeList({
               {representative.phone ? (
                 <div>
                   <dt>Téléphone</dt>
-                  <dd>{representative.phone}</dd>
+                  <dd>
+                    <a href={`tel:${representative.phone}`}>
+                      {representative.phone}
+                    </a>
+                  </dd>
                 </div>
               ) : null}
             </dl>

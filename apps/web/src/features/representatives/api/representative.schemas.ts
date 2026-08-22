@@ -9,7 +9,7 @@ import type {
 } from "../types";
 
 const nameSchema = z.string().trim().min(1).max(100).regex(/\S/);
-const emailSchema = z.email().max(254).nullable();
+const emailSchema = z.string().trim().email().max(254).nullable();
 const phoneSchema = z.string().trim().min(1).max(50).regex(/\S/).nullable();
 const notesSchema = z.string().trim().max(2_000).nullable();
 

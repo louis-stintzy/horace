@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { getAgencyMutationErrorMessage } from "../features/agencies/agency-errors";
 import {
@@ -31,6 +31,7 @@ export function AgenciesPage() {
   const [editingAgency, setEditingAgency] = useState<Agency>();
   const [statusAgencyId, setStatusAgencyId] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
+  const writeLock = useRef(false);
 
   const isAgencyWritePending =
     createMutation.isPending ||
@@ -38,6 +39,7 @@ export function AgenciesPage() {
     statusMutation.isPending;
 
   const openCreateForm = () => {
+    if (writeLock.current || isAgencyWritePending) return;
     createMutation.reset();
     statusMutation.reset();
     setEditingAgency(undefined);
@@ -46,6 +48,7 @@ export function AgenciesPage() {
   };
 
   const openEditForm = (agency: Agency) => {
+    if (writeLock.current || isAgencyWritePending) return;
     editMutation.reset();
     statusMutation.reset();
     setIsCreateOpen(false);
@@ -54,18 +57,23 @@ export function AgenciesPage() {
   };
 
   const submitCreate = async (values: AgencyFormValues) => {
+    if (writeLock.current) return;
+
     const normalizedNotes = values.notes.trim();
     const input: CreateAgencyInput = {
       name: values.name.trim(),
       ...(normalizedNotes ? { notes: normalizedNotes } : {}),
     };
 
+    writeLock.current = true;
     try {
       const agency = await createMutation.mutateAsync(input);
       setIsCreateOpen(false);
       setFeedback(`L’agence « ${agency.name} » a été créée.`);
     } catch {
       // TanStack Query conserve l'erreur pour le rendu du formulaire.
+    } finally {
+      writeLock.current = false;
     }
   };
 
@@ -73,15 +81,14 @@ export function AgenciesPage() {
     values: AgencyFormValues,
     dirtyFields: Partial<Record<keyof AgencyFormValues, boolean>>,
   ) => {
-    if (!editingAgency) {
-      return;
-    }
+    if (!editingAgency || writeLock.current) return;
 
     const input: UpdateAgencyInput = {
       ...(dirtyFields.name ? { name: values.name.trim() } : {}),
       ...(dirtyFields.notes ? { notes: values.notes.trim() || null } : {}),
     };
 
+    writeLock.current = true;
     try {
       const agency = await editMutation.mutateAsync({
         id: editingAgency.id,
@@ -91,10 +98,15 @@ export function AgenciesPage() {
       setFeedback(`L’agence « ${agency.name} » a été modifiée.`);
     } catch {
       // TanStack Query conserve l'erreur pour le rendu du formulaire.
+    } finally {
+      writeLock.current = false;
     }
   };
 
   const toggleAgencyStatus = async (agency: Agency) => {
+    if (writeLock.current || isAgencyWritePending) return;
+    writeLock.current = true;
+
     statusMutation.reset();
     setStatusAgencyId(agency.id);
     setFeedback(undefined);
@@ -111,6 +123,7 @@ export function AgenciesPage() {
       // TanStack Query conserve l'erreur pour le rendu de la page.
     } finally {
       setStatusAgencyId(undefined);
+      writeLock.current = false;
     }
   };
 
@@ -154,6 +167,7 @@ export function AgenciesPage() {
             }
             isSubmitting={createMutation.isPending}
             onCancel={() => {
+              if (writeLock.current) return;
               createMutation.reset();
               setIsCreateOpen(false);
             }}
@@ -175,6 +189,7 @@ export function AgenciesPage() {
             }
             isSubmitting={editMutation.isPending}
             onCancel={() => {
+              if (writeLock.current) return;
               editMutation.reset();
               setEditingAgency(undefined);
             }}

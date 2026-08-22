@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
@@ -614,5 +614,59 @@ describe("page agences", () => {
     expect(
       await screen.findByText("L’agence « Agence renommée » a été modifiée."),
     ).toBeInTheDocument();
+  });
+
+  it("empêche deux créations concurrentes", async () => {
+    let currentAgencies = agencies;
+    let postCount = 0;
+
+    server.use(
+      http.get("/api/v1/agencies", () =>
+        HttpResponse.json({ data: currentAgencies }),
+      ),
+
+      http.post("/api/v1/agencies", async () => {
+        postCount += 1;
+        await delay(150);
+
+        currentAgencies = [...agencies, createdAgency];
+
+        return HttpResponse.json({ data: createdAgency }, { status: 201 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderApp("/agencies");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Ajouter une agence",
+      }),
+    );
+
+    await user.type(screen.getByLabelText("Nom"), "Nouvelle agence");
+
+    await user.type(screen.getByLabelText(/Notes/), "Notes de création");
+
+    const submitButton = screen.getByRole("button", {
+      name: "Créer l’agence",
+    });
+
+    const form = submitButton.closest("form");
+
+    expect(form).not.toBeNull();
+
+    if (!form) {
+      throw new Error("Le formulaire de création est introuvable.");
+    }
+
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    expect(
+      await screen.findByText("L’agence « Nouvelle agence » a été créée."),
+    ).toBeInTheDocument();
+
+    expect(postCount).toBe(1);
   });
 });

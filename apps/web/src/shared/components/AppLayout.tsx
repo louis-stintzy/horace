@@ -26,6 +26,16 @@ export function AppLayout() {
                   className={({ isActive }) =>
                     isActive ? "navigation__link is-active" : "navigation__link"
                   }
+                  to="/representatives"
+                >
+                  Représentants
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  className={({ isActive }) =>
+                    isActive ? "navigation__link is-active" : "navigation__link"
+                  }
                   to="/agencies"
                 >
                   Agences
